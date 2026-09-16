@@ -1,0 +1,112 @@
+[
+ {
+  "updatedAt": "2026-09-16T07:04:02.635Z",
+  "createdAt": "2026-09-16T07:04:02.635Z",
+  "id": "TicketToolWf001",
+  "name": "Create Support Ticket (tool)",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+   {
+    "parameters": {
+     "inputSource": "workflowInputs",
+     "workflowInputs": {
+      "values": [
+       {
+        "name": "question",
+        "type": "string"
+       }
+      ]
+     }
+    },
+    "type": "n8n-nodes-base.executeWorkflowTrigger",
+    "typeVersion": 1.2,
+    "position": [
+     -160,
+     0
+    ],
+    "id": "463320f2-6b9d-4b11-898b-df8fc7e96e8f",
+    "name": "When Executed by Another Workflow"
+   },
+   {
+    "parameters": {
+     "resource": "row",
+     "operation": "create",
+     "tableId": {
+      "__rl": true,
+      "mode": "list",
+      "value": "tickets",
+      "cachedResultName": "tickets"
+     },
+     "dataToSend": "autoMapInputData",
+     "options": {}
+    },
+    "type": "n8n-nodes-base.supabase",
+    "typeVersion": 1,
+    "position": [
+     140,
+     0
+    ],
+    "id": "a4527f75-8ed2-46fe-9e8e-4f99df399ac0",
+    "name": "Insert Ticket Row",
+    "credentials": {
+     "supabaseApi": {
+      "id": "jQOH7JyVce4o9i39",
+      "name": "Supabase account"
+     }
+    }
+   }
+  ],
+  "connections": {
+   "When Executed by Another Workflow": {
+    "main": [
+     [
+      {
+       "node": "Insert Ticket Row",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {},
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "e8579e47-afd1-4815-af72-8b18ec03adc2",
+  "activeVersionId": null,
+  "versionCounter": 1,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+   {
+    "updatedAt": "2026-09-16T07:04:02.637Z",
+    "createdAt": "2026-09-16T07:04:02.637Z",
+    "role": "workflow:owner",
+    "workflowId": "TicketToolWf001",
+    "projectId": "jSEYIip5OsVM51lB",
+    "project": {
+     "updatedAt": "2026-09-14T07:47:59.561Z",
+     "createdAt": "2026-09-14T07:42:45.127Z",
+     "id": "jSEYIip5OsVM51lB",
+     "name": "Han wang <hackenwang97@gmail.com>",
+     "type": "personal",
+     "icon": null,
+     "description": null,
+     "customTelemetryTags": [],
+     "creatorId": "30280390-9d3a-4d95-90d9-114f020e916e"
+    }
+   }
+  ],
+  "versionMetadata": {
+   "name": null,
+   "description": null
+  }
+ }
+]

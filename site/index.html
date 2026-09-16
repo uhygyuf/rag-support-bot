@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbor Coffee Roasters — Fresh roasted in Portland, Maine</title>
+<style>
+  :root { --ink:#1d1a17; --muted:#6b625a; --accent:#b4552d; --bg:#faf7f2; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Segoe UI",system-ui,sans-serif; color:var(--ink); background:var(--bg); line-height:1.6; }
+  header { padding:22px 32px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e0d6; }
+  .brand { font-weight:800; letter-spacing:.5px; }
+  nav a { color:var(--muted); text-decoration:none; margin-left:22px; font-size:15px; }
+  .hero { padding:74px 32px 60px; max-width:900px; }
+  h1 { font-size:44px; line-height:1.15; letter-spacing:-.5px; }
+  .sub { color:var(--muted); font-size:19px; margin-top:16px; max-width:620px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; padding:0 32px 60px; max-width:1100px; }
+  .card { background:#fff; border:1px solid #ece4d9; border-radius:14px; padding:20px; }
+  .card h3 { font-size:17px; margin-bottom:6px; }
+  .price { color:var(--accent); font-weight:700; margin-top:10px; }
+  .note { color:var(--muted); font-size:14px; }
+  footer { padding:26px 32px 40px; border-top:1px solid #e8e0d6; color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">HARBOR COFFEE ROASTERS</div>
+  <nav><a href="#coffee">Coffee</a><a href="#shipping">Shipping</a><a href="#about">About</a></nav>
+</header>
+
+<section class="hero">
+  <h1>Roasted to order in Portland, Maine.</h1>
+  <p class="sub">Small-batch coffee, shipped Tuesdays and Fridays. Subscriptions from 2 weeks. Questions about shipping, grind or wholesale? Ask our assistant — it answers from our own FAQ and policy pages.</p>
+</section>
+
+<div class="grid" id="coffee">
+  <div class="card"><h3>Harbor House</h3><p class="note">Brazil + Colombia, medium. Cocoa, hazelnut.</p><div class="price">$18.50 / 340 g</div></div>
+  <div class="card"><h3>Night Watch</h3><p class="note">Sumatra + Guatemala, dark. Dark chocolate, molasses.</p><div class="price">$19.00 / 340 g</div></div>
+  <div class="card"><h3>Ethiopia Guji Natural</h3><p class="note">Light roast, filter. Blueberry, jasmine.</p><div class="price">$22.00 / 250 g</div></div>
+  <div class="card"><h3>Swiss Water Decaf</h3><p class="note">Brazil, medium-dark. Dark cocoa, almond.</p><div class="price">$19.50 / 340 g</div></div>
+</div>
+
+<div class="grid" id="shipping">
+  <div class="card"><h3>Shipping</h3><p class="note">Roast &amp; ship Tue/Fri. US 2–4 business days. Free US shipping over $45.</p></div>
+  <div class="card"><h3>Subscriptions</h3><p class="note">Every 2 or 4 weeks. Pause up to 24h before roast day. 10% off + free US shipping.</p></div>
+  <div class="card"><h3>Returns</h3><p class="note">Damaged or off-tasting bag? Free replacement within 30 days — keep the bag.</p></div>
+  <div class="card" id="about"><h3>Wholesale</h3><p class="note">From 5 kg/month. Private label from 10 kg/month.</p></div>
+</div>
+
+<footer>42 Wharf Street, Portland, ME · support@harborcoffee.example · Mon–Fri 9am–5pm ET</footer>
+
+<!-- chat widget: data-webhook must be the Chat Trigger's URL,
+     http://<n8n-host>/webhook/<chat-trigger-webhookId>/chat (the workflow has to be published) -->
+<script src="widget.js" data-webhook="http://127.0.0.1:5678/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat" data-title="Harbor Support"></script>
+</body>
+</html>

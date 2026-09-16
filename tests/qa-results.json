@@ -1,0 +1,422 @@
+[
+ {
+  "id": "T1.1",
+  "area": "workflow",
+  "desc": "AI Agent node present",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T1.2",
+  "area": "workflow",
+  "desc": "Agent has a chat model wired",
+  "status": "PASS",
+  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+ },
+ {
+  "id": "T1.3",
+  "area": "workflow",
+  "desc": "Agent has memory wired (multi-turn)",
+  "status": "PASS",
+  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+ },
+ {
+  "id": "T1.4",
+  "area": "workflow",
+  "desc": "Agent has the knowledge-base tool wired",
+  "status": "PASS",
+  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+ },
+ {
+  "id": "T1.5",
+  "area": "workflow",
+  "desc": "Agent has the ticket tool wired",
+  "status": "PASS",
+  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+ },
+ {
+  "id": "T1.6",
+  "area": "workflow",
+  "desc": "Exactly one chat-model node",
+  "status": "PASS",
+  "detail": "found: ['DeepSeek Chat Model']"
+ },
+ {
+  "id": "T1.7",
+  "area": "workflow",
+  "desc": "Chat model is the native DeepSeek node (OpenAI-format node breaks on thinking models)",
+  "status": "PASS",
+  "detail": "@n8n/n8n-nodes-langchain.lmChatDeepSeek"
+ },
+ {
+  "id": "T1.8",
+  "area": "workflow",
+  "desc": "Chat model has a credential attached",
+  "status": "PASS",
+  "detail": "{'deepSeekApi': {'id': 'wo6MAuk0h5i7BtkI', 'name': 'DeepSeek account'}}"
+ },
+ {
+  "id": "T2.1",
+  "area": "workflow",
+  "desc": "KB tool mode = retrieve-as-tool",
+  "status": "PASS",
+  "detail": "retrieve-as-tool"
+ },
+ {
+  "id": "T2.2",
+  "area": "workflow",
+  "desc": "KB tool points at table 'documents'",
+  "status": "PASS",
+  "detail": "{'__rl': True, 'mode': 'list', 'value': 'documents', 'cachedResultName': 'documents'}"
+ },
+ {
+  "id": "T2.3",
+  "area": "workflow",
+  "desc": "KB tool has Supabase credential",
+  "status": "PASS",
+  "detail": "{'supabaseApi': {'id': 'jQOH7JyVce4o9i39', 'name': 'Supabase account'}}"
+ },
+ {
+  "id": "T2.4",
+  "area": "workflow",
+  "desc": "KB tool has its own embeddings sub-node",
+  "status": "PASS",
+  "detail": "children: ['Embeddings OpenAI (Query)']"
+ },
+ {
+  "id": "T3.1",
+  "area": "safety",
+  "desc": "Prompt forces knowledge_base before answering",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T3.2",
+  "area": "safety",
+  "desc": "Prompt forbids answering from own knowledge",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T3.3",
+  "area": "safety",
+  "desc": "Prompt requires citing the source file",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T3.4",
+  "area": "safety",
+  "desc": "Prompt routes no-answer to create_ticket",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T3.5",
+  "area": "safety",
+  "desc": "Answer length bounded (<= 60 words)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T4.1",
+  "area": "workflow",
+  "desc": "Ticket tool targets a workflow id",
+  "status": "PASS",
+  "detail": "{\"__rl\": true, \"mode\": \"list\", \"value\": \"TicketToolWf001\", \"cachedResultName\": \"Create Support Ticket (tool)\"}"
+ },
+ {
+  "id": "T5.O",
+  "area": "workflow",
+  "desc": "Ingestion node kept: On form submission",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T5.D",
+  "area": "workflow",
+  "desc": "Ingestion node kept: Default Data Loader",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T5.E",
+  "area": "workflow",
+  "desc": "Ingestion node kept: Embeddings OpenAI",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T5.S",
+  "area": "workflow",
+  "desc": "Ingestion node kept: Supabase Vector Store",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T5.9",
+  "area": "workflow",
+  "desc": "Ingestion store still mode=insert",
+  "status": "PASS",
+  "detail": "insert"
+ },
+ {
+  "id": "T5.10",
+  "area": "workflow",
+  "desc": "Ingestion store has Supabase credential",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T6.1",
+  "area": "release",
+  "desc": "Chat trigger exists",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T6.2",
+  "area": "release",
+  "desc": "Chat trigger is public (embeddable off-site)",
+  "status": "PASS",
+  "detail": "public=True"
+ },
+ {
+  "id": "T6.3",
+  "area": "release",
+  "desc": "Chat trigger has a fixed webhookId (stable embed URL)",
+  "status": "PASS",
+  "detail": "webhookId='b45b0144-db0e-41f0-bef0-380d3d675f2c'"
+ },
+ {
+  "id": "T6.4",
+  "area": "release",
+  "desc": "Response mode pinned to lastNode (plain JSON for 3rd-party widgets)",
+  "status": "PASS",
+  "detail": "responseMode='lastNode'"
+ },
+ {
+  "id": "T7.1",
+  "area": "security",
+  "desc": "No plaintext API keys / secrets in workflow JSON",
+  "status": "PASS",
+  "detail": "{'sk- key': 0, 'sb_secret key': 0, 'JWT/service_role': 0, 'Bearer literal': 0, 'password literal': 0}"
+ },
+ {
+  "id": "T4.2",
+  "area": "workflow",
+  "desc": "Ticket sub-workflow inserts into 'tickets'",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T4.3",
+  "area": "workflow",
+  "desc": "Ticket sub-workflow declares a 'question' input",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T4.4",
+  "area": "workflow",
+  "desc": "Ticket sub-workflow has no plaintext secrets",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T8.1",
+  "area": "content",
+  "desc": "Answerable question -> fact present in faq.md (how long does us shipping ta)",
+  "status": "PASS",
+  "detail": "2–4 business days"
+ },
+ {
+  "id": "T8.2",
+  "area": "content",
+  "desc": "Answerable question -> fact present in products.md (how much is ethiopia guji)",
+  "status": "PASS",
+  "detail": "$22"
+ },
+ {
+  "id": "T8.3",
+  "area": "content",
+  "desc": "Answerable question -> fact present in faq.md (can i pause my subscription)",
+  "status": "PASS",
+  "detail": "24 hours"
+ },
+ {
+  "id": "T8.4",
+  "area": "content",
+  "desc": "Answerable question -> fact present in policies.md (do you offer franchises)",
+  "status": "PASS",
+  "detail": "do not offer franchise"
+ },
+ {
+  "id": "T8.5",
+  "area": "content",
+  "desc": "Answerable question -> fact present in faq.md (do you offer wholesale)",
+  "status": "PASS",
+  "detail": "5 kg"
+ },
+ {
+  "id": "T8.6",
+  "area": "content",
+  "desc": "Answerable question -> fact present in faq.md (what payment methods)",
+  "status": "PASS",
+  "detail": "Apple Pay"
+ },
+ {
+  "id": "T9.1",
+  "area": "content",
+  "desc": "Handoff trigger is genuinely unanswerable (are you hiring baristas)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T9.2",
+  "area": "content",
+  "desc": "Handoff trigger is genuinely unanswerable (can i pay in three instalments)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T10.1",
+  "area": "integration",
+  "desc": "Widget posts n8n 'action: sendMessage'",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T10.2",
+  "area": "integration",
+  "desc": "Widget posts the field 'chatInput' (n8n chat protocol)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T10.3",
+  "area": "integration",
+  "desc": "Widget sends a stable sessionId",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T10.4",
+  "area": "integration",
+  "desc": "Widget parses the n8n reply field 'output'",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T11.1",
+  "area": "integration",
+  "desc": "index.html declares a widget webhook URL",
+  "status": "PASS",
+  "detail": "http://127.0.0.1:5678/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
+ },
+ {
+  "id": "T11.2",
+  "area": "integration",
+  "desc": "Embed URL uses the n8n chat endpoint shape /webhook/<id>/chat",
+  "status": "PASS",
+  "detail": "http://127.0.0.1:5678/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
+ },
+ {
+  "id": "T12.1",
+  "area": "a11y",
+  "desc": "Chat button has an accessible name (aria-label)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T12.2",
+  "area": "a11y",
+  "desc": "Message log is a live region (aria-live)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T12.3",
+  "area": "a11y",
+  "desc": "Text input has a real label / aria-label",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T12.4",
+  "area": "a11y",
+  "desc": "Panel exposes dialog semantics (role=dialog)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T12.5",
+  "area": "a11y",
+  "desc": "User text is inserted with textContent (no innerHTML sink for untrusted data)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T13.1",
+  "area": "a11y",
+  "desc": "Contrast Send button label #ffffff on #b4552d >= 4.5",
+  "status": "PASS",
+  "detail": "ratio 4.91"
+ },
+ {
+  "id": "T13.2",
+  "area": "a11y",
+  "desc": "Contrast price text #b4552d on #ffffff >= 4.5",
+  "status": "PASS",
+  "detail": "ratio 4.91"
+ },
+ {
+  "id": "T13.3",
+  "area": "a11y",
+  "desc": "Contrast muted body text #6b625a on #faf7f2 >= 4.5",
+  "status": "PASS",
+  "detail": "ratio 5.58"
+ },
+ {
+  "id": "T13.4",
+  "area": "a11y",
+  "desc": "Contrast body text #1d1a17 on #faf7f2 >= 4.5",
+  "status": "PASS",
+  "detail": "ratio 16.21"
+ },
+ {
+  "id": "T13.5",
+  "area": "a11y",
+  "desc": "Contrast header text #ffffff on #1d1a17 >= 4.5",
+  "status": "PASS",
+  "detail": "ratio 17.32"
+ },
+ {
+  "id": "T14.1",
+  "area": "security",
+  "desc": "No secrets committed in the project tree",
+  "status": "PASS",
+  "detail": "[]"
+ },
+ {
+  "id": "T15.1",
+  "area": "docs",
+  "desc": "README documents the exported workflow JSON it ships",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T15.2",
+  "area": "docs",
+  "desc": "design doc reflects the Agent architecture actually built (not only the Q&A chain)",
+  "status": "PASS",
+  "detail": "drift: design-v0.md still describes the Q&A-chain build"
+ },
+ {
+  "id": "T15.3",
+  "area": "docs",
+  "desc": "A QA report exists in docs/",
+  "status": "PASS",
+  "detail": ""
+ }
+]
