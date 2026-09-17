@@ -56,7 +56,10 @@
       "id": "jQOH7JyVce4o9i39",
       "name": "Supabase account"
      }
-    }
+    },
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 2000
    },
    {
     "parameters": {
@@ -76,7 +79,10 @@
       "id": "ogZ8uYheTecXRIZI",
       "name": "OpenAI account"
      }
-    }
+    },
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 2000
    },
    {
     "parameters": {
@@ -90,7 +96,10 @@
      304
     ],
     "id": "8a9159ce-11a7-4dab-9540-930e1a90b451",
-    "name": "Default Data Loader"
+    "name": "Default Data Loader",
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 2000
    },
    {
     "parameters": {
@@ -214,7 +223,10 @@
      560
     ],
     "id": "b02385d6-64a1-4bc0-a642-80d532b3a90f",
-    "name": "Support Agent"
+    "name": "Support Agent",
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 3000
    },
    {
     "parameters": {
@@ -244,7 +256,10 @@
       "id": "jQOH7JyVce4o9i39",
       "name": "Supabase account"
      }
-    }
+    },
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 1500
    },
    {
     "parameters": {
@@ -274,7 +289,10 @@
      1120
     ],
     "id": "65e39610-e803-4921-9161-003006567278",
-    "name": "Create Ticket Tool"
+    "name": "Create Ticket Tool",
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 2000
    },
    {
     "parameters": {

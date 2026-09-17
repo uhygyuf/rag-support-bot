@@ -162,6 +162,16 @@ def test_workflow(wf):
               bool(p.get("agentName") and p.get("agentDescription") and p.get("agentIcon")),
               "name=%r" % p.get("agentName"))
 
+    # --- resilience: transient failures must self-heal, not surface to the visitor
+    retry_nodes = ["Support Agent", "Create Ticket Tool", "Supabase Vector Store (Tool)",
+                   "Embeddings OpenAI", "Supabase Vector Store"]
+    for i, name in enumerate(retry_nodes, 1):
+        node = N.get(name)
+        check("T17.%d" % i, "reliability",
+              "%s retries a transient failure" % name,
+              bool(node and node.get("retryOnFail") and (node.get("maxTries") or 0) >= 2),
+              "retryOnFail=%r" % (node or {}).get("retryOnFail"))
+
     # --- secret scan inside the workflow export
     blob = json.dumps(wf, ensure_ascii=False)
     patterns = {
@@ -270,8 +280,12 @@ def test_site():
           "data-welcome" in js and "data-quick-replies" in js)
     check("T16.4", "ux", "Widget hides the quick options after first use",
           "options are used once" in js or "quick.textContent = ''" in js)
-    check("T16.5", "ux", "Widget shows a friendly message when the bot is unreachable",
-          "not reachable" in js)
+    check("T16.5", "ux", "Visitors never see a technical error (friendly offline text)",
+          "OFFLINE" in js and "console.warn" in js)
+    check("T16.6", "ux", "Widget aborts a hung request instead of spinning forever",
+          "AbortController" in js and "TIMEOUT_MS" in js)
+    check("T16.7", "ux", "Offline text and timeout are configurable",
+          "data-offline" in js and "data-timeout-ms" in js)
 
     # --- colour contrast (WCAG 2.1 AA: 4.5:1 normal text, 3:1 large)
     def lum(hexc):
@@ -358,7 +372,7 @@ def main():
           % (len(RESULTS), len(failed)))
     print("=" * (width + 26))
     for area in ("workflow", "integration", "safety", "security", "content",
-                 "a11y", "ux", "release", "docs"):
+                 "a11y", "ux", "reliability", "release", "docs"):
         rows = [r for r in RESULTS if r["area"] == area]
         if not rows:
             continue

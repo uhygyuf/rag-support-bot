@@ -224,6 +224,41 @@
   "detail": "name='Harbor Support'"
  },
  {
+  "id": "T17.1",
+  "area": "reliability",
+  "desc": "Support Agent retries a transient failure",
+  "status": "PASS",
+  "detail": "retryOnFail=True"
+ },
+ {
+  "id": "T17.2",
+  "area": "reliability",
+  "desc": "Create Ticket Tool retries a transient failure",
+  "status": "PASS",
+  "detail": "retryOnFail=True"
+ },
+ {
+  "id": "T17.3",
+  "area": "reliability",
+  "desc": "Supabase Vector Store (Tool) retries a transient failure",
+  "status": "PASS",
+  "detail": "retryOnFail=True"
+ },
+ {
+  "id": "T17.4",
+  "area": "reliability",
+  "desc": "Embeddings OpenAI retries a transient failure",
+  "status": "PASS",
+  "detail": "retryOnFail=True"
+ },
+ {
+  "id": "T17.5",
+  "area": "reliability",
+  "desc": "Supabase Vector Store retries a transient failure",
+  "status": "PASS",
+  "detail": "retryOnFail=True"
+ },
+ {
   "id": "T7.1",
   "area": "security",
   "desc": "No plaintext API keys / secrets in workflow JSON",
@@ -415,7 +450,21 @@
  {
   "id": "T16.5",
   "area": "ux",
-  "desc": "Widget shows a friendly message when the bot is unreachable",
+  "desc": "Visitors never see a technical error (friendly offline text)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T16.6",
+  "area": "ux",
+  "desc": "Widget aborts a hung request instead of spinning forever",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T16.7",
+  "area": "ux",
+  "desc": "Offline text and timeout are configurable",
   "status": "PASS",
   "detail": ""
  },

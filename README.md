@@ -77,6 +77,29 @@ Notes
 - n8n has died on its own repeatedly after long idle periods in this setup. If the bot stops
   answering, first check `http://127.0.0.1:5678`; if it is down, double-click `start-demo.bat`.
 
+### Reliability — what is defended, and what is not
+
+Built-in protections (added 2026-09-17, all covered by tests `T16.x` / `T17.x`):
+
+| Risk | Defence |
+|---|---|
+| Transient network / API hiccup | the Agent, the KB tool, the ticket tool, the embeddings and the Supabase write each **retry** (2 tries) before failing |
+| The model takes too long | the widget **aborts after 45 s** and shows its offline line instead of spinning forever |
+| n8n is down or the request fails | the visitor sees one plain sentence ("our assistant is offline right now…"), never an HTTP code or stack trace; the details go to the browser console (`data-offline`, `data-timeout-ms` to customise) |
+| n8n restarts | the workflow stays **published** (that state lives in the database), so the webhook answers again as soon as n8n is back at `http://127.0.0.1:5678` |
+| A knowledge document is wrong/outdated | the bot escalates instead of guessing; fix the document and re-upload |
+
+Operational rules while a client is using it:
+
+1. **Do not import/replace the workflow while it is serving** — an import *deactivates* it. After any
+   import you must re-publish (and restart n8n) before the widget answers again.
+2. **Do not restart or stop n8n during a demo** — answers fail for ~1 minute.
+3. Keep the machine awake (sleep/hibernate stops everything). "Always available" needs hosting: that
+   is the VPS add-on (Docker + Caddy + auto-restart), not something a laptop can promise.
+4. Supabase free projects **pause after ~7 days without activity** — with real traffic that never
+   happens; for a demo, open the Supabase dashboard before showing it.
+5. If the bot stops answering: open `http://127.0.0.1:5678`; if it is down, run `start-demo.bat`.
+
 ## Layout
 ```
 rag-support-bot/

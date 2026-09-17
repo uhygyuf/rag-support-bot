@@ -25,6 +25,9 @@
   var QUICK   = attr('data-quick-replies',
     'How long does US shipping take?|Do you ship to Canada?|How much is the Ethiopia Guji?|' +
     'Can I pause my subscription?|Do you offer wholesale pricing?|I want to talk to a human').split('|');
+  var OFFLINE = attr('data-offline',
+    'Sorry — our assistant is offline right now. Please email us and a human will reply as soon as we can.');
+  var TIMEOUT_MS = parseInt(attr('data-timeout-ms', '45000'), 10) || 45000;
 
   var sessionId = 's-' + Math.random().toString(36).slice(2, 10);
 
@@ -146,20 +149,26 @@
     quick.textContent = '';                 /* the starting options are used once */
     var pending = add('…', 'bot');
 
+    var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS) : null;
+
     fetch(WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sendMessage', sessionId: sessionId, chatInput: q })
+      body: JSON.stringify({ action: 'sendMessage', sessionId: sessionId, chatInput: q }),
+      signal: ctrl ? ctrl.signal : undefined
     }).then(function (r) {
       if (!r.ok) { throw new Error('HTTP ' + r.status); }
       return r.text();
     }).then(function (t) {
+      if (timer) { clearTimeout(timer); }
       var out = t;
       try { var j = JSON.parse(t); out = j.output || j.text || j.reply || t; } catch (_) {}
       pending.textContent = out;
     }).catch(function (err) {
-      pending.textContent = 'Sorry — the assistant is not reachable right now (' + err.message
-        + '). Please email us instead.';
+      if (timer) { clearTimeout(timer); }
+      if (window.console && console.warn) { console.warn('[support widget]', err); }
+      pending.textContent = OFFLINE;       /* visitors never see a stack trace */
     });
   }
 
