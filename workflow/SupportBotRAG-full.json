@@ -99,6 +99,59 @@
      "authentication": "none",
      "options": {
       "responseMode": "lastNode"
+     },
+     "agentName": "Harbor Support",
+     "agentDescription": "Ask about shipping, products, subscriptions, returns or wholesale. Answers come from Harbor's own pages; anything else goes to a human.",
+     "agentIcon": {
+      "type": "emoji",
+      "value": "☕"
+     },
+     "initialMessages": "Hi! I'm the Harbor Coffee assistant ☕\nI answer only from our own FAQ, product and policy pages, and I'll pass anything I can't answer to a human.\nPick a topic below or type your question.",
+     "suggestedPrompts": {
+      "prompts": [
+       {
+        "icon": {
+         "type": "emoji",
+         "value": "🚚"
+        },
+        "text": "How long does US shipping take?"
+       },
+       {
+        "icon": {
+         "type": "emoji",
+         "value": "🌍"
+        },
+        "text": "Do you ship to Canada?"
+       },
+       {
+        "icon": {
+         "type": "emoji",
+         "value": "💰"
+        },
+        "text": "How much is the Ethiopia Guji?"
+       },
+       {
+        "icon": {
+         "type": "emoji",
+         "value": "🔁"
+        },
+        "text": "Can I pause my subscription?"
+       },
+       {
+        "icon": {
+         "type": "emoji",
+         "value": "🏪"
+        },
+        "text": "Do you offer wholesale pricing?"
+       },
+       {
+        "icon": {
+         "type": "emoji",
+         "value": "🙋"
+        },
+        "text": "I want to talk to a human"
+       }
+      ]
      }
     },
     "type": "@n8n/n8n-nodes-langchain.chatTrigger",
@@ -150,7 +203,7 @@
      "promptType": "define",
      "text": "={{ $json.chatInput }}",
      "options": {
-      "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES — follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If knowledge_base finds nothing relevant: call the tool \"create_ticket\" with the customer's question, then reply:\n   \"I don't have that information — I've passed your question to our team and a human will reply within 24 hours.\"\n4. Keep answers under 60 words. Friendly, concrete, no fluff.\n5. End every real answer with the source file name in square brackets, e.g. [faq.md].\n6. Use the conversation history for follow-up questions (\"how long does it take?\" right after Canada = Canada shipping time).",
+      "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES — follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If knowledge_base finds nothing relevant: call the tool \"create_ticket\" with the customer's question, then reply:\n   \"I don't have that information — I've passed your question to our team and a human will reply within 24 hours.\"\n4. Keep answers under 60 words. Friendly, concrete, no fluff.\n5. End every real answer with the source file name in square brackets, e.g. [faq.md].\n6. Use the conversation history for follow-up questions (\"how long does it take?\" right after Canada = Canada shipping time).\n7. If the customer asks for a human, an agent or support staff, or says they are unhappy: call create_ticket with their request, then reply that a human will get back to them within 24 hours.",
       "maxIterations": 5
      }
     },

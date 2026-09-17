@@ -171,6 +171,18 @@ That renders the floating chat button in the bottom-right corner. The widget tal
 with the n8n chat protocol (`{action:'sendMessage', sessionId, chatInput}`) and displays the `output`
 field of the reply — do not change those field names.
 
+**Making it yours (all optional, all inside the same script tag):**
+
+| Attribute | What it controls |
+|---|---|
+| `data-title` | name in the chat header and in the greeting bubble |
+| `data-cta` | text on the floating button, e.g. `Need coffee help?` |
+| `data-welcome` | the first message the visitor sees |
+| `data-quick-replies` | the one-click starting questions, separated by `|` (up to about 6 recommended) |
+
+The visitor also sees a short greeting bubble ~2 seconds after the page loads (once per browser
+session); it disappears when the chat is opened or dismissed with the ✕.
+
 > Testing locally: open `site/index.html` directly, or serve the folder (`python -m http.server 8080`)
 > and visit `http://localhost:8080`.
 

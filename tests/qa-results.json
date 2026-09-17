@@ -119,6 +119,13 @@
   "detail": ""
  },
  {
+  "id": "T3.6",
+  "area": "safety",
+  "desc": "Prompt escalates an explicit human request to a ticket",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T4.1",
   "area": "workflow",
   "desc": "Ticket tool targets a workflow id",
@@ -194,6 +201,27 @@
   "desc": "Response mode pinned to lastNode (plain JSON for 3rd-party widgets)",
   "status": "PASS",
   "detail": "responseMode='lastNode'"
+ },
+ {
+  "id": "T6.5",
+  "area": "ux",
+  "desc": "Chat trigger shows a welcome message on open",
+  "status": "PASS",
+  "detail": "initialMessages=\"Hi! I'm the Harbor Coffee assistant ☕\\nI answer only from our own FAQ, product and policy pages, and I'll pass anything I can't answer to a human.\\nPick a topic below or type your question.\""
+ },
+ {
+  "id": "T6.6",
+  "area": "ux",
+  "desc": "Chat trigger offers >= 4 quick-start options",
+  "status": "PASS",
+  "detail": "found 6"
+ },
+ {
+  "id": "T6.7",
+  "area": "ux",
+  "desc": "Assistant identity set (name/description/icon)",
+  "status": "PASS",
+  "detail": "name='Harbor Support'"
  },
  {
   "id": "T7.1",
@@ -353,6 +381,41 @@
   "id": "T12.5",
   "area": "a11y",
   "desc": "User text is inserted with textContent (no innerHTML sink for untrusted data)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T16.1",
+  "area": "ux",
+  "desc": "Widget shows a teaser greeting before the visitor opens it",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T16.2",
+  "area": "ux",
+  "desc": "Widget renders clickable quick-start options",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T16.3",
+  "area": "ux",
+  "desc": "Widget welcome text is configurable (data-welcome)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T16.4",
+  "area": "ux",
+  "desc": "Widget hides the quick options after first use",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T16.5",
+  "area": "ux",
+  "desc": "Widget shows a friendly message when the bot is unreachable",
   "status": "PASS",
   "detail": ""
  },

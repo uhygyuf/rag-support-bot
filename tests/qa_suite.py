@@ -116,6 +116,8 @@ def test_workflow(wf):
               "create_ticket" in sp)
         check("T3.5", "safety", "Answer length bounded (<= 60 words)",
               "60 words" in sp)
+        check("T3.6", "safety", "Prompt escalates an explicit human request to a ticket",
+              "asks for a human" in sp and "create_ticket" in sp)
 
     # --- ticket tool -> sub-workflow -> tickets table
     tool = next((n for n in wf["nodes"] if n["name"] == "Create Ticket Tool"), None)
@@ -150,6 +152,15 @@ def test_workflow(wf):
         check("T6.4", "release", "Response mode pinned to lastNode "
                                  "(plain JSON for 3rd-party widgets)",
               rm == "lastNode", "responseMode=%r" % rm)
+        # --- greeting + quick-start options (ETS-Anita pattern)
+        check("T6.5", "ux", "Chat trigger shows a welcome message on open",
+              bool(p.get("initialMessages")), "initialMessages=%r" % p.get("initialMessages"))
+        prompts = (p.get("suggestedPrompts") or {}).get("prompts") or []
+        check("T6.6", "ux", "Chat trigger offers >= 4 quick-start options",
+              len(prompts) >= 4, "found %d" % len(prompts))
+        check("T6.7", "ux", "Assistant identity set (name/description/icon)",
+              bool(p.get("agentName") and p.get("agentDescription") and p.get("agentIcon")),
+              "name=%r" % p.get("agentName"))
 
     # --- secret scan inside the workflow export
     blob = json.dumps(wf, ensure_ascii=False)
@@ -250,6 +261,18 @@ def test_site():
                            "sink for untrusted data)",
           "textContent" in js)
 
+    # --- greeting bubble + quick-start options in the client-side widget
+    check("T16.1", "ux", "Widget shows a teaser greeting before the visitor opens it",
+          "rgw-teaser" in js and "teaser.classList.add('show')" in js)
+    check("T16.2", "ux", "Widget renders clickable quick-start options",
+          "rgw-chip" in js and "renderChips" in js)
+    check("T16.3", "ux", "Widget welcome text is configurable (data-welcome)",
+          "data-welcome" in js and "data-quick-replies" in js)
+    check("T16.4", "ux", "Widget hides the quick options after first use",
+          "options are used once" in js or "quick.textContent = ''" in js)
+    check("T16.5", "ux", "Widget shows a friendly message when the bot is unreachable",
+          "not reachable" in js)
+
     # --- colour contrast (WCAG 2.1 AA: 4.5:1 normal text, 3:1 large)
     def lum(hexc):
         hexc = hexc.lstrip("#")
@@ -335,7 +358,7 @@ def main():
           % (len(RESULTS), len(failed)))
     print("=" * (width + 26))
     for area in ("workflow", "integration", "safety", "security", "content",
-                 "a11y", "release", "docs"):
+                 "a11y", "ux", "release", "docs"):
         rows = [r for r in RESULTS if r["area"] == area]
         if not rows:
             continue
