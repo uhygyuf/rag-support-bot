@@ -57,6 +57,26 @@ publish it in the editor (top-right **Publish**, formerly the Active toggle) or
 webhook into an already-running instance). The embed URL is
 `http://<host>:5678/webhook/<chat-trigger-webhookId>/chat`.
 
+## Starting and stopping (daily use)
+
+| I want to… | Do this |
+|---|---|
+| **Start everything** (n8n + demo page) | double-click `start-demo.bat` in this folder — it starts n8n if needed, waits ~30 s, then opens the demo website |
+| Start only the server | double-click `D:\Tools\n8n\n8n-serve.bat` (a window titled "n8n server" stays open — keep it open) |
+| Open the bot editor | browser → `http://127.0.0.1:5678` → workflow **Support Bot (RAG) — full** |
+| Open the demo website | double-click `site\index.html`, then click the **"Need coffee help?"** button |
+| **Stop n8n** | close the window titled "n8n server", or double-click `D:\Tools\n8n\stop-n8n.bat` |
+| Check whether n8n is running | `curl -s -o NUL -w "%{http_code}" http://127.0.0.1:5678/home` → `200` = up, `000` = down (takes 20–60 s to boot after a start) |
+
+Notes
+
+- **n8n must be running for the bot to answer** — the widget on the website calls it at
+  `http://127.0.0.1:5678/webhook/<id>/chat`. If n8n is down, the widget shows "not reachable".
+- The workflow must also be **Published** (top-right of the editor) for that URL to answer.
+- Supabase, DeepSeek and SiliconFlow are cloud services — nothing to start or stop there.
+- n8n has died on its own repeatedly after long idle periods in this setup. If the bot stops
+  answering, first check `http://127.0.0.1:5678`; if it is down, double-click `start-demo.bat`.
+
 ## Layout
 ```
 rag-support-bot/
