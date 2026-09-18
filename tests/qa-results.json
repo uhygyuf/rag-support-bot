@@ -175,6 +175,13 @@
   "detail": "Reply Normal"
  },
  {
+  "id": "T4.11",
+  "area": "workflow",
+  "desc": "Ticket records the CUSTOMER's question (read from the trigger, not the model reply)",
+  "status": "PASS",
+  "detail": "const t = $('When chat message received').first().json;\nconst item = $input.first().json;\nreturn [{ json: { question: t."
+ },
+ {
   "id": "T5.O",
   "area": "workflow",
   "desc": "Ingestion node kept: On form submission",

@@ -145,6 +145,14 @@ def test_workflow(wf):
         check(cid, "workflow", "Chat reply node '%s' returns {output: ...}" % nm,
               bool(node and "output" in (node["parameters"].get("jsCode") or "")),
               nm)
+    prep = N.get("Prep Ticket Question")
+    if prep:
+        js = prep["parameters"].get("jsCode") or ""
+        check("T4.11", "workflow", "Ticket records the CUSTOMER's question "
+                                   "(read from the trigger, not the model reply)",
+              "$('When chat message received')" in js and "chatInput" in js
+              and "item.output" not in js,
+              js[:120])
 
     # --- ingestion branch regression
     for need in ("On form submission", "Default Data Loader", "Embeddings OpenAI",

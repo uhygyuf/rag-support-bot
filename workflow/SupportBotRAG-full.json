@@ -316,7 +316,7 @@
    {
     "parameters": {
      "mode": "runOnceForAllItems",
-     "jsCode": "const item = $input.first().json;\nreturn [{ json: { question: item.chatInput || item.output || '' } }];"
+     "jsCode": "const t = $('When chat message received').first().json;\nconst item = $input.first().json;\nreturn [{ json: { question: t.chatInput || item.question || '' } }];"
     },
     "type": "n8n-nodes-base.code",
     "typeVersion": 2,
