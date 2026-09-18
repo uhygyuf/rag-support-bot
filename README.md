@@ -23,7 +23,7 @@ products, shipping, returns, wholesale, FAQ. The demo site is a real page that l
 | M3 | Human handoff (ticket) | **done (fixed 2026-09-18)** | deterministic branch: unanswerable question → `Insert Ticket` runs and its execution output contains the inserted row (`id:1`); the earlier tool-based version silently wrote nothing |
 | M4 | Website widget on the demo site | **code done, needs a published workflow** | widget protocol + embed URL fixed and verified over HTTP 200; site/ is not yet served |
 | M5 | VPS deploy (Docker + Caddy + backups) | not started | Premium-tier add-on |
-| — | Handoff notification (Telegram) | **wired, awaiting the token + chat id** | `Notify Telegram` runs in the escalation branch and cannot break the ticket (`onError=continue`); it needs the bot token as an n8n Telegram credential and the chat id filled in |
+| — | Handoff notification (Telegram) | **done (verified 2026-09-18)** | escalation branch runs `Insert Ticket` → `Notify Telegram` → `Reply Escalated`; execution 40 is `success` with the inserted row (`created_at`) and Telegram's `message_id` in the output — the phone push was delivered |
 
 ### 2026-09-18 — two real defects found and fixed
 
