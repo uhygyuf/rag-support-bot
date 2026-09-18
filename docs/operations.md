@@ -87,3 +87,36 @@ every channel.
 3. **Exposing n8n exposes the chat endpoint.** While the tunnel is up, anyone who knows the URL can
    send messages and consume the configured LLM quota. Stop the tunnel when you are done.
 4. **No ticket dashboard.** Tickets live in the Supabase `tickets` table; there is no UI yet.
+
+---
+
+## 5. Console-window hygiene (automatic)
+
+Restarting n8n repeatedly used to leave a growing pile of console windows: `n8n-serve.bat` ends
+with `pause`, so when the n8n process exits the window sits waiting for a keypress forever, and
+nothing closes it.
+
+Two automatic mechanisms now prevent that:
+
+| Mechanism | What it does |
+|---|---|
+| `D:\Tools\n8n\cleanup-zombies.ps1` | kills launcher windows that no longer keep n8n or the tunnel alive |
+| Scheduled task **"n8n zombie cleanup"** | runs that script every 15 minutes |
+| both launchers (`n8n-serve.bat`, `start-public.bat`) | call the script once before starting, so restarts never accumulate |
+
+Manual run: `D:\Tools\n8n\cleanup-zombies.bat` (log: `D:\Tools\n8n\cleanup.log`).
+
+**Safety nets** (a cleanup script that force-kills processes must never take down the service):
+
+1. the process listening on port 5678 **and every ancestor above it** form a keep-set that is never touched;
+2. a window is only killed when nothing in its process tree is `node.exe` or `cloudflared.exe`.
+
+Verified: a fabricated zombie launcher was removed while the live instance kept answering HTTP 200.
+
+**Maintainer notes** (both cost real debugging time):
+
+- Never name a PowerShell parameter `$pid` — it collides with PowerShell's automatic variable and the
+  function silently receives the wrong process id (the first version of this script killed the live
+  launcher chain because of exactly that).
+- In a window started hidden/minimised, `timeout /t N` aborts immediately (stdin is redirected) — use
+  a `ping`-based wait instead when you need to keep such a process alive for testing.
