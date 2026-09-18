@@ -1,0 +1,90 @@
+[
+ {
+  "id": "SupportBotAlerts01",
+  "name": "Support Bot — Error Alerts",
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+   {
+    "parameters": {},
+    "type": "n8n-nodes-base.errorTrigger",
+    "typeVersion": 1,
+    "position": [
+     -260,
+     300
+    ],
+    "id": "24799a21-895b-41ae-b8d7-9ecf5ccc9806",
+    "name": "Error Trigger"
+   },
+   {
+    "parameters": {
+     "mode": "runOnceForAllItems",
+     "jsCode": "const NL = String.fromCharCode(10);\nconst w = $json.workflow || {};\nconst ex = $json.execution || {};\nconst tr = $json.trigger || {};\nconst err = ex.error || tr.error || {};\nlet node = err.node;\nif (node && typeof node === \"object\") { node = node.name || node.type || \"\"; }\nif (!node) { node = ex.lastNodeExecuted || tr.mode || \"n/a\"; }\nconst id = (ex.id !== undefined) ? ex.id : (err.timestamp ? \"activation\" : \"n/a\");\nconst lines = [\n  \"Workflow: \" + (w.name || \"unknown\") + \"  [\" + (w.id || \"\") + \"]\",\n  \"Node: \" + node,\n  \"Error: \" + (err.message || err.description || \"n/a\"),\n  \"Exec id: \" + id + \"   mode: \" + (ex.mode || tr.mode || \"n/a\"),\n  \"Open: http://127.0.0.1:5678/workflow/\" + (w.id || \"\")\n];\nreturn [{ json: { message: lines.join(NL) } }];"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     0,
+     300
+    ],
+    "id": "efda9ff5-7308-45dc-ad00-81625f070b24",
+    "name": "Format Alert"
+   },
+   {
+    "parameters": {
+     "chatId": "YOUR_TELEGRAM_CHAT_ID",
+     "text": "={{ \"[ALERT] \" + $json.message }}",
+     "additionalFields": {}
+    },
+    "type": "n8n-nodes-base.telegram",
+    "typeVersion": 1.2,
+    "position": [
+     260,
+     300
+    ],
+    "id": "e7fbc1a9-94ca-43be-878c-f9fcf4c5c2dc",
+    "name": "Notify Telegram (error)",
+    "credentials": {
+     "telegramApi": {
+      "id": "HfMV2TNGkXsBsIQd",
+      "name": "Telegram account"
+     }
+    },
+    "retryOnFail": true,
+    "maxTries": 3,
+    "waitBetweenTries": 5000
+   }
+  ],
+  "connections": {
+   "Error Trigger": {
+    "main": [
+     [
+      {
+       "node": "Format Alert",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Format Alert": {
+    "main": [
+     [
+      {
+       "node": "Notify Telegram (error)",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   }
+  },
+  "settings": {
+   "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {},
+  "nodeGroups": [],
+  "pinData": {}
+ }
+]

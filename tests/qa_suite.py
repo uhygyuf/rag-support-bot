@@ -407,6 +407,9 @@ def test_channels(channel_dir):
         trig = next((n for n in wf["nodes"] if "telegramTrigger" in n["type"]), None)
         check("T20.5", "channels", "Telegram channel: message trigger present",
               trig is not None)
+        check("T20.8", "release", "Telegram trigger carries a webhookId (without it "
+                                  "n8n registers no route and Telegram gets 404s)",
+              bool(trig and trig.get("webhookId")), "webhookId=%r" % (trig or {}).get("webhookId"))
         repl = N.get("Send Telegram Reply")
         check("T20.6", "channels", "Telegram channel: reply goes back to the "
                                    "sender's chat (trigger expression, not a "
@@ -460,6 +463,31 @@ def test_channels(channel_dir):
                                    "third-party URL with a token",
               "webhook.site" not in json.dumps(p.get("url", "")),
               json.dumps(p.get("url", ""))[:80])
+
+
+def test_error_alerts(workflow_dir):
+    """Error-alert workflow: n8n's native Error Trigger pattern."""
+    path = os.path.join(workflow_dir, "SupportBotErrorAlerts.json")
+    if not os.path.exists(path):
+        return check("T24.1", "reliability", "Error-alert workflow shipped", False, path)
+    wf = load_workflow(path)
+    N = nodes_by_name(wf)
+    check("T24.1", "reliability", "Alert workflow uses n8n's Error Trigger node",
+          any("errorTrigger" in n["type"] for n in wf["nodes"]))
+    fmt = N.get("Format Alert")
+    check("T24.2", "reliability", "Alert message names the workflow, failing node and error",
+          bool(fmt) and all(k in fmt["parameters"].get("jsCode", "")
+                            for k in ("workflow", "Node", "Error")),
+          "jsCode missing fields")
+    check("T24.3", "reliability", "Alert is delivered out-of-band (Telegram message)",
+          any("telegram" in n["type"] for n in wf["nodes"]))
+    check("T24.4", "reliability", "Alert delivery itself retries before giving up",
+          all(not n.get("retryOnFail") or (n.get("maxTries") or 0) >= 2
+              for n in wf["nodes"] if "telegram" in n["type"]))
+    js = (fmt or {}).get("parameters", {}).get("jsCode", "")
+    check("T24.5", "reliability", "Alert handles BOTH shapes (execution error and "
+                                 "trigger/activation error)",
+          "trigger" in js and "execution" in js)
 
 
 def test_code_node_syntax(workflow_dir):
@@ -519,6 +547,7 @@ def main():
     test_knowledge()
     test_site()
     test_channels(os.path.join(ROOT, "workflow"))
+    test_error_alerts(os.path.join(ROOT, "workflow"))
     test_code_node_syntax(os.path.join(ROOT, "workflow"))
     test_repo()
 
