@@ -20,10 +20,21 @@ products, shipping, returns, wholesale, FAQ. The demo site is a real page that l
 |---|---|---|---|
 | M1 | Ingestion + chat answers from real docs | **done** | 3 docs ingested into Supabase `documents` (vector 1024); live answers with `[faq.md]` / `[product-catalogue.md]` citations |
 | M2 | Multi-turn memory | **done** | same-session follow-up "…What about Canada?" resolved to 7–14 business days |
-| M3 | Human handoff (ticket) | **done** | out-of-KB question → `Create Ticket Tool` executed inside a successful run (n8n execution 23); the row itself was verified by the owner in Supabase |
+| M3 | Human handoff (ticket) | **done (fixed 2026-09-18)** | deterministic branch: unanswerable question → `Insert Ticket` runs and its execution output contains the inserted row (`id:1`); the earlier tool-based version silently wrote nothing |
 | M4 | Website widget on the demo site | **code done, needs a published workflow** | widget protocol + embed URL fixed and verified over HTTP 200; site/ is not yet served |
 | M5 | VPS deploy (Docker + Caddy + backups) | not started | Premium-tier add-on |
-| — | Handoff notification (email/Telegram) | **open** | ticket lands in the DB but nobody is pinged yet |
+| — | Handoff notification (Telegram) | **wired, awaiting the token + chat id** | `Notify Telegram` runs in the escalation branch and cannot break the ticket (`onError=continue`); it needs the bot token as an n8n Telegram credential and the chat id filled in |
+
+### 2026-09-18 — two real defects found and fixed
+
+1. **The agent skipped the ticket tool.** On a live run it replied "I've passed your question to our
+   team" **without calling `create_ticket`** — the question was lost. Escalation is now a deterministic
+   graph branch (`If escalated` → `Insert Ticket` → `Notify Telegram` → `Reply Escalated`), driven by a
+   verbatim handoff sentence in the system prompt.
+2. **The Supabase node's `tableId` was an object, not a string** → `Could not find the table
+   'public.[object Object]'`. Every earlier "ticket created" claim was wrong; nothing had been written.
+   After the fix, execution 37 returns the inserted row (`id: 1`). Regression guards: `T4.1` (string
+   table name), `T1.5` (deterministic escalation), `T4.7` (notification cannot break the ticket).
 
 ## Shipped artifacts
 

@@ -212,7 +212,7 @@
      "promptType": "define",
      "text": "={{ $json.chatInput }}",
      "options": {
-      "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES — follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If knowledge_base finds nothing relevant: call the tool \"create_ticket\" with the customer's question, then reply:\n   \"I don't have that information — I've passed your question to our team and a human will reply within 24 hours.\"\n4. Keep answers under 60 words. Friendly, concrete, no fluff.\n5. End every real answer with the source file name in square brackets, e.g. [faq.md].\n6. Use the conversation history for follow-up questions (\"how long does it take?\" right after Canada = Canada shipping time).\n7. If the customer asks for a human, an agent or support staff, or says they are unhappy: call create_ticket with their request, then reply that a human will get back to them within 24 hours.",
+      "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES - follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If the results do not contain the answer, OR the customer asks for a human: reply EXACTLY this sentence and nothing else:\n   I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\n   Never promise anything else and never invent other wording.\n4. Keep answers under 60 words. Friendly, concrete, no fluff.\n5. End every real answer with the source file name in square brackets, e.g. [faq.md].\n6. Use the conversation history for follow-up questions.",
       "maxIterations": 5
      }
     },
@@ -263,39 +263,6 @@
    },
    {
     "parameters": {
-     "description": "Create a support ticket and escalate the customer's question to a human. Use this ONLY when the knowledge_base has no answer.",
-     "source": "database",
-     "workflowId": {
-      "__rl": true,
-      "mode": "list",
-      "value": "TicketToolWf001",
-      "cachedResultName": "Create Support Ticket (tool)"
-     },
-     "workflowInputs": {
-      "mappingMode": "defineBelow",
-      "value": {
-       "question": "={{ $fromAI('question', 'The customer question that needs a human answer', 'string') }}"
-      },
-      "matchingColumns": [],
-      "schema": [],
-      "attemptToConvertTypes": false,
-      "convertFieldsToString": false
-     }
-    },
-    "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-    "typeVersion": 2.2,
-    "position": [
-     300,
-     1120
-    ],
-    "id": "65e39610-e803-4921-9161-003006567278",
-    "name": "Create Ticket Tool",
-    "retryOnFail": true,
-    "maxTries": 2,
-    "waitBetweenTries": 2000
-   },
-   {
-    "parameters": {
      "model": "deepseek-chat",
      "options": {}
     },
@@ -313,6 +280,133 @@
       "name": "DeepSeek account"
      }
     }
+   },
+   {
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": false,
+       "typeValidation": "loose",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "esc-1",
+        "leftValue": "={{ $json.output }}",
+        "rightValue": "passed your question to our team",
+        "operator": {
+         "type": "string",
+         "operation": "contains"
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    },
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     -80,
+     448
+    ],
+    "id": "77a0c1a1-360f-4293-928b-08acd1b2a28f",
+    "name": "If escalated"
+   },
+   {
+    "parameters": {
+     "mode": "runOnceForAllItems",
+     "jsCode": "const item = $input.first().json;\nreturn [{ json: { question: item.chatInput || item.output || '' } }];"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     140,
+     640
+    ],
+    "id": "4d18a71c-bc85-434b-aa91-978ac74581fd",
+    "name": "Prep Ticket Question"
+   },
+   {
+    "parameters": {
+     "resource": "row",
+     "operation": "create",
+     "tableId": "tickets",
+     "dataToSend": "autoMapInputData",
+     "options": {}
+    },
+    "type": "n8n-nodes-base.supabase",
+    "typeVersion": 1,
+    "position": [
+     360,
+     640
+    ],
+    "id": "b834ab7e-3c52-4c69-9979-7d7476500eab",
+    "name": "Insert Ticket",
+    "credentials": {
+     "supabaseApi": {
+      "id": "jQOH7JyVce4o9i39",
+      "name": "Supabase account"
+     }
+    },
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 2000
+   },
+   {
+    "parameters": {
+     "resource": "message",
+     "operation": "sendMessage",
+     "chatId": "PUT_YOUR_CHAT_ID_HERE",
+     "text": "=New support ticket - the bot could not answer a customer.\n\nQuestion: {{ $json.question }}\n\nOpen the Supabase 'tickets' table to follow up.",
+     "additionalFields": {}
+    },
+    "type": "n8n-nodes-base.telegram",
+    "typeVersion": 1.2,
+    "position": [
+     580,
+     640
+    ],
+    "id": "ad038584-a30e-4483-86a2-16b8797c6796",
+    "name": "Notify Telegram",
+    "onError": "continueRegularOutput",
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 2000,
+    "credentials": {
+     "telegramApi": {
+      "id": "PUT_CREDENTIAL_ID",
+      "name": "Telegram account"
+     }
+    }
+   },
+   {
+    "parameters": {
+     "mode": "runOnceForAllItems",
+     "jsCode": "return [{ json: { output: \"I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\" } }];"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     800,
+     640
+    ],
+    "id": "08a60dd9-7899-46e6-9d4c-fa41cfc68f60",
+    "name": "Reply Escalated"
+   },
+   {
+    "parameters": {
+     "mode": "runOnceForAllItems",
+     "jsCode": "const item = $input.first().json;\nreturn [{ json: { output: item.output || '' } }];"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     -80,
+     240
+    ],
+    "id": "c133ba73-d15b-47d1-983f-ae3379d72719",
+    "name": "Reply Normal"
    }
   ],
   "connections": {
@@ -393,23 +487,74 @@
      ]
     ]
    },
-   "Create Ticket Tool": {
-    "ai_tool": [
-     [
-      {
-       "node": "Support Agent",
-       "type": "ai_tool",
-       "index": 0
-      }
-     ]
-    ]
-   },
    "DeepSeek Chat Model": {
     "ai_languageModel": [
      [
       {
        "node": "Support Agent",
        "type": "ai_languageModel",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Support Agent": {
+    "main": [
+     [
+      {
+       "node": "If escalated",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "If escalated": {
+    "main": [
+     [
+      {
+       "node": "Prep Ticket Question",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "Reply Normal",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Prep Ticket Question": {
+    "main": [
+     [
+      {
+       "node": "Insert Ticket",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Insert Ticket": {
+    "main": [
+     [
+      {
+       "node": "Notify Telegram",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Notify Telegram": {
+    "main": [
+     [
+      {
+       "node": "Reply Escalated",
+       "type": "main",
        "index": 0
       }
      ]

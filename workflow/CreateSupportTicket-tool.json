@@ -33,12 +33,7 @@
     "parameters": {
      "resource": "row",
      "operation": "create",
-     "tableId": {
-      "__rl": true,
-      "mode": "list",
-      "value": "tickets",
-      "cachedResultName": "tickets"
-     },
+     "tableId": "tickets",
      "dataToSend": "autoMapInputData",
      "options": {}
     },
@@ -56,6 +51,33 @@
       "name": "Supabase account"
      }
     }
+   },
+   {
+    "parameters": {
+     "resource": "message",
+     "operation": "sendMessage",
+     "chatId": "PUT_YOUR_CHAT_ID_HERE",
+     "text": "=New support ticket - a customer question the bot could not answer.\n\nQuestion: {{ $json.question }}\n\nOpen the Supabase 'tickets' table to follow up.",
+     "additionalFields": {}
+    },
+    "type": "n8n-nodes-base.telegram",
+    "typeVersion": 1.2,
+    "position": [
+     420,
+     0
+    ],
+    "id": "b802773b-fda5-4899-96b5-b52d2d008eab",
+    "name": "Notify Telegram",
+    "onError": "continueRegularOutput",
+    "retryOnFail": true,
+    "maxTries": 2,
+    "waitBetweenTries": 2000,
+    "credentials": {
+     "telegramApi": {
+      "id": "PUT_CREDENTIAL_ID",
+      "name": "Telegram account"
+     }
+    }
    }
   ],
   "connections": {
@@ -64,6 +86,17 @@
      [
       {
        "node": "Insert Ticket Row",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Insert Ticket Row": {
+    "main": [
+     [
+      {
+       "node": "Notify Telegram",
        "type": "main",
        "index": 0
       }

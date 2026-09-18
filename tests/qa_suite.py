@@ -72,8 +72,10 @@ def test_workflow(wf):
           any("Memory" in k for k in kids), "children: %s" % kids)
     check("T1.4", "workflow", "Agent has the knowledge-base tool wired",
           any("Vector Store (Tool)" in k for k in kids), "children: %s" % kids)
-    check("T1.5", "workflow", "Agent has the ticket tool wired",
-          any("Ticket Tool" in k for k in kids), "children: %s" % kids)
+    check("T1.5", "workflow", "Escalation is deterministic (no reliance on the model "
+                              "choosing a tool)",
+          "If escalated" in N and "Insert Ticket" in N and "Create Ticket Tool" not in N,
+          "nodes: %s" % sorted(N))
 
     # --- model choice must support tool calling / avoid the reasoning_content 400
     model_nodes = [n for n in wf["nodes"] if "lmChat" in n["type"]]
@@ -112,19 +114,37 @@ def test_workflow(wf):
               "Never answer from your own knowledge" in sp)
         check("T3.3", "safety", "Prompt requires citing the source file",
               "source file name in square brackets" in sp)
-        check("T3.4", "safety", "Prompt routes no-answer to create_ticket",
-              "create_ticket" in sp)
         check("T3.5", "safety", "Answer length bounded (<= 60 words)",
               "60 words" in sp)
-        check("T3.6", "safety", "Prompt escalates an explicit human request to a ticket",
-              "asks for a human" in sp and "create_ticket" in sp)
+        check("T3.4", "safety", "Prompt routes an unanswerable question to the fixed handoff sentence",
+              "passed your question to our team" in sp and "EXACTLY this sentence" in sp)
+        check("T3.6", "safety", "Prompt also escalates an explicit human request",
+              "asks for a human" in sp)
 
-    # --- ticket tool -> sub-workflow -> tickets table
-    tool = next((n for n in wf["nodes"] if n["name"] == "Create Ticket Tool"), None)
-    if tool:
-        check("T4.1", "workflow", "Ticket tool targets a workflow id",
-              bool(tool["parameters"].get("workflowId", {}).get("value")),
-              json.dumps(tool["parameters"].get("workflowId")))
+    # --- deterministic escalation branch: ticket insert + notification + reply
+    ins = N.get("Insert Ticket")
+    if ins:
+        p = ins["parameters"]
+        check("T4.1", "workflow", "Ticket insert uses a plain string table name "
+                                  "(a resource-locator object becomes '[object Object]' at runtime)",
+              isinstance(p.get("tableId"), str) and p.get("tableId") == "tickets",
+              "tableId=%r" % (p.get("tableId"),))
+        check("T4.5", "workflow", "Ticket insert targets the row/create operation",
+              p.get("resource") == "row" and p.get("operation") == "create")
+        check("T4.6", "workflow", "Ticket insert has the Supabase credential",
+              bool(ins.get("credentials")))
+    ntf = N.get("Notify Telegram")
+    if ntf:
+        check("T4.7", "workflow", "Notification failure cannot break the ticket "
+                                  "(onError=continue)",
+              ntf.get("onError") == "continueRegularOutput", ntf.get("onError"))
+        check("T4.8", "workflow", "Notification node is a Telegram sendMessage",
+              "telegram" in ntf["type"] and ntf["parameters"].get("operation") == "sendMessage")
+    for nm, cid in (("Reply Escalated", "T4.9"), ("Reply Normal", "T4.10")):
+        node = N.get(nm)
+        check(cid, "workflow", "Chat reply node '%s' returns {output: ...}" % nm,
+              bool(node and "output" in (node["parameters"].get("jsCode") or "")),
+              nm)
 
     # --- ingestion branch regression
     for need in ("On form submission", "Default Data Loader", "Embeddings OpenAI",
@@ -163,7 +183,7 @@ def test_workflow(wf):
               "name=%r" % p.get("agentName"))
 
     # --- resilience: transient failures must self-heal, not surface to the visitor
-    retry_nodes = ["Support Agent", "Create Ticket Tool", "Supabase Vector Store (Tool)",
+    retry_nodes = ["Support Agent", "Insert Ticket", "Notify Telegram", "Supabase Vector Store (Tool)",
                    "Embeddings OpenAI", "Supabase Vector Store"]
     for i, name in enumerate(retry_nodes, 1):
         node = N.get(name)

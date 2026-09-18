@@ -11,28 +11,28 @@
   "area": "workflow",
   "desc": "Agent has a chat model wired",
   "status": "PASS",
-  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model']"
  },
  {
   "id": "T1.3",
   "area": "workflow",
   "desc": "Agent has memory wired (multi-turn)",
   "status": "PASS",
-  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model']"
  },
  {
   "id": "T1.4",
   "area": "workflow",
   "desc": "Agent has the knowledge-base tool wired",
   "status": "PASS",
-  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model']"
  },
  {
   "id": "T1.5",
   "area": "workflow",
-  "desc": "Agent has the ticket tool wired",
+  "desc": "Escalation is deterministic (no reliance on the model choosing a tool)",
   "status": "PASS",
-  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'Create Ticket Tool', 'DeepSeek Chat Model']"
+  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Ticket Question', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'When chat message received']"
  },
  {
   "id": "T1.6",
@@ -105,13 +105,6 @@
   "detail": ""
  },
  {
-  "id": "T3.4",
-  "area": "safety",
-  "desc": "Prompt routes no-answer to create_ticket",
-  "status": "PASS",
-  "detail": ""
- },
- {
   "id": "T3.5",
   "area": "safety",
   "desc": "Answer length bounded (<= 60 words)",
@@ -119,18 +112,67 @@
   "detail": ""
  },
  {
+  "id": "T3.4",
+  "area": "safety",
+  "desc": "Prompt routes an unanswerable question to the fixed handoff sentence",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T3.6",
   "area": "safety",
-  "desc": "Prompt escalates an explicit human request to a ticket",
+  "desc": "Prompt also escalates an explicit human request",
   "status": "PASS",
   "detail": ""
  },
  {
   "id": "T4.1",
   "area": "workflow",
-  "desc": "Ticket tool targets a workflow id",
+  "desc": "Ticket insert uses a plain string table name (a resource-locator object becomes '[object Object]' at runtime)",
   "status": "PASS",
-  "detail": "{\"__rl\": true, \"mode\": \"list\", \"value\": \"TicketToolWf001\", \"cachedResultName\": \"Create Support Ticket (tool)\"}"
+  "detail": "tableId='tickets'"
+ },
+ {
+  "id": "T4.5",
+  "area": "workflow",
+  "desc": "Ticket insert targets the row/create operation",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T4.6",
+  "area": "workflow",
+  "desc": "Ticket insert has the Supabase credential",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T4.7",
+  "area": "workflow",
+  "desc": "Notification failure cannot break the ticket (onError=continue)",
+  "status": "PASS",
+  "detail": "continueRegularOutput"
+ },
+ {
+  "id": "T4.8",
+  "area": "workflow",
+  "desc": "Notification node is a Telegram sendMessage",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T4.9",
+  "area": "workflow",
+  "desc": "Chat reply node 'Reply Escalated' returns {output: ...}",
+  "status": "PASS",
+  "detail": "Reply Escalated"
+ },
+ {
+  "id": "T4.10",
+  "area": "workflow",
+  "desc": "Chat reply node 'Reply Normal' returns {output: ...}",
+  "status": "PASS",
+  "detail": "Reply Normal"
  },
  {
   "id": "T5.O",
@@ -233,26 +275,33 @@
  {
   "id": "T17.2",
   "area": "reliability",
-  "desc": "Create Ticket Tool retries a transient failure",
+  "desc": "Insert Ticket retries a transient failure",
   "status": "PASS",
   "detail": "retryOnFail=True"
  },
  {
   "id": "T17.3",
   "area": "reliability",
-  "desc": "Supabase Vector Store (Tool) retries a transient failure",
+  "desc": "Notify Telegram retries a transient failure",
   "status": "PASS",
   "detail": "retryOnFail=True"
  },
  {
   "id": "T17.4",
   "area": "reliability",
-  "desc": "Embeddings OpenAI retries a transient failure",
+  "desc": "Supabase Vector Store (Tool) retries a transient failure",
   "status": "PASS",
   "detail": "retryOnFail=True"
  },
  {
   "id": "T17.5",
+  "area": "reliability",
+  "desc": "Embeddings OpenAI retries a transient failure",
+  "status": "PASS",
+  "detail": "retryOnFail=True"
+ },
+ {
+  "id": "T17.6",
   "area": "reliability",
   "desc": "Supabase Vector Store retries a transient failure",
   "status": "PASS",
