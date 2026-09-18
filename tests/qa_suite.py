@@ -465,6 +465,25 @@ def test_channels(channel_dir):
               json.dumps(p.get("url", ""))[:80])
 
 
+def test_input_guard():
+    """Chat trigger must validate input instead of letting the model crash."""
+    wf = load_workflow(os.path.join(ROOT, "workflow", "SupportBotRAG-full.json"))
+    conns = wf["connections"]
+    N = nodes_by_name(wf)
+    trig = "When chat message received"
+    first = (conns.get(trig, {}).get("main", [[{}]])[0] or [{}])[0].get("node")
+    check("T25.1", "reliability", "Chat trigger routes through an input-validation "
+                                 "node (an empty/malformed body must not reach the model)",
+          first == "Valid input?", "first node after the trigger: %r" % first)
+    check("T25.2", "reliability", "Empty input gets a friendly reply, not a 500",
+          "Reply Empty Input" in N
+          and "output" in N["Reply Empty Input"]["parameters"].get("jsCode", ""))
+    guard = N.get("Valid input?")
+    check("T25.3", "reliability", "Validation checks chatInput and has both branches wired",
+          bool(guard) and "chatInput" in json.dumps(guard["parameters"])
+          and len(conns.get("Valid input?", {}).get("main", [])) == 2)
+
+
 def test_error_alerts(workflow_dir):
     """Error-alert workflow: n8n's native Error Trigger pattern."""
     path = os.path.join(workflow_dir, "SupportBotErrorAlerts.json")
@@ -547,6 +566,7 @@ def main():
     test_knowledge()
     test_site()
     test_channels(os.path.join(ROOT, "workflow"))
+    test_input_guard()
     test_error_alerts(os.path.join(ROOT, "workflow"))
     test_code_node_syntax(os.path.join(ROOT, "workflow"))
     test_repo()

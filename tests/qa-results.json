@@ -11,28 +11,28 @@
   "area": "workflow",
   "desc": "Agent has a chat model wired",
   "status": "PASS",
-  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model']"
+  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'Valid input?']"
  },
  {
   "id": "T1.3",
   "area": "workflow",
   "desc": "Agent has memory wired (multi-turn)",
   "status": "PASS",
-  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model']"
+  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'Valid input?']"
  },
  {
   "id": "T1.4",
   "area": "workflow",
   "desc": "Agent has the knowledge-base tool wired",
   "status": "PASS",
-  "detail": "children: ['When chat message received', 'Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model']"
+  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'Valid input?']"
  },
  {
   "id": "T1.5",
   "area": "workflow",
   "desc": "Escalation is deterministic (no reliance on the model choosing a tool)",
   "status": "PASS",
-  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Ticket Question', 'Push to CRM', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'When chat message received']"
+  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Ticket Question', 'Push to CRM', 'Reply Empty Input', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'Valid input?', 'When chat message received']"
  },
  {
   "id": "T1.6",
@@ -714,6 +714,27 @@
   "detail": "\"PUT_YOUR_CRM_WEBHOOK_URL\""
  },
  {
+  "id": "T25.1",
+  "area": "reliability",
+  "desc": "Chat trigger routes through an input-validation node (an empty/malformed body must not reach the model)",
+  "status": "PASS",
+  "detail": "first node after the trigger: 'Valid input?'"
+ },
+ {
+  "id": "T25.2",
+  "area": "reliability",
+  "desc": "Empty input gets a friendly reply, not a 500",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T25.3",
+  "area": "reliability",
+  "desc": "Validation checks chatInput and has both branches wired",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T24.1",
   "area": "reliability",
   "desc": "Alert workflow uses n8n's Error Trigger node",
@@ -751,7 +772,7 @@
  {
   "id": "T23.1",
   "area": "quality",
-  "desc": "All 11 Code nodes in shipped workflows parse as valid JavaScript",
+  "desc": "All 12 Code nodes in shipped workflows parse as valid JavaScript",
   "status": "PASS",
   "detail": "[]"
  },

@@ -62,8 +62,15 @@ python tests/qa_suite.py                 # exit 0 = all checks pass
 python tests/qa_suite.py --workflow workflow/SupportBotRAG-full.json
 ```
 
-It is static + contract only (no network, no writes). Live behaviour is covered by the end-to-end
-tests in the QA report — POST the chat protocol to the published webhook.
+```bash
+python tests/qa_suite.py     # 115 static checks: structure, contracts, safety, security, docs
+python tests/e2e_live.py     # 10 live cases against a running instance (writes tests/e2e-results.json)
+python tests/e2e_live.py --tunnel https://<your-tunnel-host>   # also verifies the public origin
+```
+
+`qa_suite.py` is static + contract only (no network, no writes). `e2e_live.py` needs the workflow
+published and n8n reachable; it covers the happy path, citations, multi-turn memory, escalation,
+prompt injection, malformed/empty/oversized input, concurrency and the public origin.
 
 ## Publishing (needed before a website embed works)
 

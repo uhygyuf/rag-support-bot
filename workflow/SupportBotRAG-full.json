@@ -429,6 +429,52 @@
     "retryOnFail": true,
     "maxTries": 2,
     "waitBetweenTries": 2000
+   },
+   {
+    "parameters": {
+     "conditions": {
+      "options": {
+       "caseSensitive": false,
+       "typeValidation": "loose",
+       "version": 2
+      },
+      "conditions": [
+       {
+        "id": "g1",
+        "leftValue": "={{ $json.chatInput }}",
+        "rightValue": "",
+        "operator": {
+         "type": "string",
+         "operation": "notEmpty"
+        }
+       }
+      ],
+      "combinator": "and"
+     },
+     "options": {}
+    },
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2.2,
+    "position": [
+     -500,
+     780
+    ],
+    "id": "bf50a5e6-518e-4542-8cc3-cc70f6a22809",
+    "name": "Valid input?"
+   },
+   {
+    "parameters": {
+     "mode": "runOnceForAllItems",
+     "jsCode": "return [{ json: { output: \"I didn't catch that — could you please retype your question? I can help with orders, shipping, returns, wholesale and our coffee range.\" } }];"
+    },
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+     -500,
+     1040
+    ],
+    "id": "366bcad5-8ba9-44aa-a347-64faf981b14e",
+    "name": "Reply Empty Input"
    }
   ],
   "connections": {
@@ -469,7 +515,7 @@
     "main": [
      [
       {
-       "node": "Support Agent",
+       "node": "Valid input?",
        "type": "main",
        "index": 0
       }
@@ -587,6 +633,24 @@
      [
       {
        "node": "Notify Telegram",
+       "type": "main",
+       "index": 0
+      }
+     ]
+    ]
+   },
+   "Valid input?": {
+    "main": [
+     [
+      {
+       "node": "Support Agent",
+       "type": "main",
+       "index": 0
+      }
+     ],
+     [
+      {
+       "node": "Reply Empty Input",
        "type": "main",
        "index": 0
       }

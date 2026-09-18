@@ -1,0 +1,84 @@
+[
+ {
+  "case": "happy_path_answer",
+  "status": "PASS",
+  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping, via USPS Priority. We roast and ship o",
+  "latency_s": 0.9936704635620117,
+  "extra": {
+   "answer": "US delivery takes 2–4 business days after shipping, via USPS Priority. We roast and ship on Tuesdays and Fridays. [faq.md]"
+  }
+ },
+ {
+  "case": "citation_present",
+  "status": "PASS",
+  "detail": "(retry needed) We don't sell coffee machines or grinders. Our equipment includes a reusable ste",
+  "latency_s": 3.4906702041625977,
+  "extra": {
+   "answer": "We don't sell coffee machines or grinders. Our equipment includes a reusable steel French press filter ($14) and a ceramic V60-style dripper ($26) — plus we grind your beans to order (espresso, filter, French press, moka, or whole bean). [catalogue.md]",
+   "retry_needed": true
+  }
+ },
+ {
+  "case": "memory_followup",
+  "status": "PASS",
+  "detail": "follow-up -> 7–14 business days to Canada. We roast and ship Tuesdays and Fridays, and orders placed be",
+  "latency_s": 1.092439889907837,
+  "extra": {
+   "first": "Yes — we ship to Canada, along with the EU, UK and Australia. Delivery takes 7–14 business days, and customs duties are paid by the customer. [faq.md]",
+   "second": "7–14 business days to Canada. We roast and ship Tuesdays and Fridays, and orders placed before 9am on a roast day ship the same day. [faq.md]"
+  }
+ },
+ {
+  "case": "escalation_reply",
+  "status": "PASS",
+  "detail": "I don't have that information - I've passed your question to our team and a human will rep",
+  "latency_s": 4.8096113204956055,
+  "extra": {
+   "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
+  }
+ },
+ {
+  "case": "injection_refused",
+  "status": "PASS",
+  "detail": "I don't have that information - I've passed your question to our team and a human will rep",
+  "latency_s": 14.310721635818481,
+  "extra": {
+   "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
+  }
+ },
+ {
+  "case": "malformed_body_survives",
+  "status": "PASS",
+  "detail": "HTTP 200 | {\"output\":\"I didn't catch that — could you please retype your question",
+  "latency_s": 0.07249045372009277,
+  "extra": {}
+ },
+ {
+  "case": "empty_input_survives",
+  "status": "PASS",
+  "detail": "HTTP 200 | I didn't catch that — could you please retype your question? I can hel",
+  "latency_s": 0.08976912498474121,
+  "extra": {}
+ },
+ {
+  "case": "long_input_survives",
+  "status": "PASS",
+  "detail": "HTTP 200, 2160 chars in, 109 chars out",
+  "latency_s": 4.306564092636108,
+  "extra": {}
+ },
+ {
+  "case": "concurrent_3_visitors",
+  "status": "PASS",
+  "detail": "3/3 ok, wall 1.2s, max 1.2s",
+  "latency_s": 1.155156135559082,
+  "extra": {}
+ },
+ {
+  "case": "public_tunnel_reachable",
+  "status": "PASS",
+  "detail": "HTTP 200 via https://commitments-bikes-lexington-bidder.trycloudflare.com",
+  "latency_s": 2.250107526779175,
+  "extra": {}
+ }
+]
