@@ -560,6 +560,160 @@
   "detail": "ratio 17.32"
  },
  {
+  "id": "T20.1",
+  "area": "channels",
+  "desc": "SupportBotTelegram-channel.json: readable + has an AI Agent",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T20.2",
+  "area": "channels",
+  "desc": "SupportBotTelegram-channel.json: reuses the same knowledge base tool",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T20.3",
+  "area": "channels",
+  "desc": "SupportBotTelegram-channel.json: escalation still writes a ticket",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T20.4",
+  "area": "channels",
+  "desc": "SupportBotTelegram-channel.json: no personal data committed (email / chat id must be placeholders)",
+  "status": "PASS",
+  "detail": "personal identifiers found in the shipped workflow"
+ },
+ {
+  "id": "T21.1",
+  "area": "channels",
+  "desc": "SupportBotEmail-channel.json: readable + has an AI Agent",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T21.2",
+  "area": "channels",
+  "desc": "SupportBotEmail-channel.json: reuses the same knowledge base tool",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T21.3",
+  "area": "channels",
+  "desc": "SupportBotEmail-channel.json: escalation still writes a ticket",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T21.4",
+  "area": "channels",
+  "desc": "SupportBotEmail-channel.json: no personal data committed (email / chat id must be placeholders)",
+  "status": "PASS",
+  "detail": "personal identifiers found in the shipped workflow"
+ },
+ {
+  "id": "T20.5",
+  "area": "channels",
+  "desc": "Telegram channel: message trigger present",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T20.6",
+  "area": "channels",
+  "desc": "Telegram channel: reply goes back to the sender's chat (trigger expression, not a hard-coded chat id)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T20.7",
+  "area": "channels",
+  "desc": "Telegram channel: uses the bot credential",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T21.5",
+  "area": "channels",
+  "desc": "Email channel: IMAP trigger present",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T21.6",
+  "area": "safety",
+  "desc": "Email channel: does NOT mark inbox mail as read (postProcessAction=nothing)",
+  "status": "PASS",
+  "detail": "postProcessAction='nothing'"
+ },
+ {
+  "id": "T21.7",
+  "area": "safety",
+  "desc": "Email channel: only answers mail to the dedicated alias (+support) — never the whole inbox",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T21.8",
+  "area": "channels",
+  "desc": "Email channel: SMTP reply node wired + credential",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T21.9",
+  "area": "channels",
+  "desc": "Email channel: replies address the original sender (expression, not a hard-coded address)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T22.1",
+  "area": "integration",
+  "desc": "CRM/HTTP node present in the escalation branch",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T22.2",
+  "area": "integration",
+  "desc": "CRM push is a POST of a JSON body",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T22.3",
+  "area": "integration",
+  "desc": "CRM payload carries the ticket id + question",
+  "status": "PASS",
+  "detail": "\"={{ JSON.stringify({ event: 'support_ticket', question: $json.question, ticket_id: $json.id, created_at: $json.created_"
+ },
+ {
+  "id": "T22.4",
+  "area": "reliability",
+  "desc": "A broken CRM endpoint cannot block the ticket or the customer reply (onError=continue)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T22.5",
+  "area": "security",
+  "desc": "CRM endpoint is a placeholder, not a live third-party URL with a token",
+  "status": "PASS",
+  "detail": "\"PUT_YOUR_CRM_WEBHOOK_URL\""
+ },
+ {
+  "id": "T23.1",
+  "area": "quality",
+  "desc": "All 10 Code nodes in shipped workflows parse as valid JavaScript",
+  "status": "PASS",
+  "detail": "[]"
+ },
+ {
   "id": "T14.1",
   "area": "security",
   "desc": "No secrets committed in the project tree",

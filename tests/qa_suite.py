@@ -374,6 +374,133 @@ def test_repo():
           if os.path.isdir(os.path.join(ROOT, "docs")) else False)
 
 
+def test_channels(channel_dir):
+    """Telegram / Email channel workflows: wiring, safety defaults, scrubbing."""
+    for fname, cid in (("SupportBotTelegram-channel.json", "T20"),
+                       ("SupportBotEmail-channel.json", "T21")):
+        path = os.path.join(channel_dir, fname)
+        if not os.path.exists(path):
+            check("%s.1" % cid, "channels", "Channel workflow shipped: %s" % fname,
+                  False, "missing file")
+            continue
+        wf = load_workflow(path)
+        N = nodes_by_name(wf)
+        blob = json.dumps(wf, ensure_ascii=False)
+        check("%s.1" % cid, "channels", "%s: readable + has an AI Agent" % fname,
+              any(n["type"] == "@n8n/n8n-nodes-langchain.agent"
+                  for n in wf["nodes"]))
+        check("%s.2" % cid, "channels", "%s: reuses the same knowledge base tool" % fname,
+              "Supabase Vector Store (Tool)" in N)
+        check("%s.3" % cid, "channels", "%s: escalation still writes a ticket" % fname,
+              "Insert Ticket" in N and "If escalated" in N)
+        check("%s.4" % cid, "channels", "%s: no personal data committed "
+                                        "(email / chat id must be placeholders)" % fname,
+              not re.search(r"[A-Za-z0-9._%+-]+@gmail\.com|\b\d{9,11}\b", blob)
+              and "@example.com" in blob,
+              "personal identifiers found in the shipped workflow")
+
+    # --- Telegram channel specifics
+    tp = os.path.join(channel_dir, "SupportBotTelegram-channel.json")
+    if os.path.exists(tp):
+        wf = load_workflow(tp)
+        N = nodes_by_name(wf)
+        trig = next((n for n in wf["nodes"] if "telegramTrigger" in n["type"]), None)
+        check("T20.5", "channels", "Telegram channel: message trigger present",
+              trig is not None)
+        repl = N.get("Send Telegram Reply")
+        check("T20.6", "channels", "Telegram channel: reply goes back to the "
+                                   "sender's chat (trigger expression, not a "
+                                   "hard-coded chat id)",
+              bool(repl and "Telegram Trigger" in json.dumps(repl["parameters"])
+                   and "chat.id" in json.dumps(repl["parameters"])))
+        check("T20.7", "channels", "Telegram channel: uses the bot credential",
+              bool(repl and repl.get("credentials")))
+
+    # --- Email channel specifics
+    ep = os.path.join(channel_dir, "SupportBotEmail-channel.json")
+    if os.path.exists(ep):
+        wf = load_workflow(ep)
+        N = nodes_by_name(wf)
+        trig = N.get("Email Trigger (IMAP)")
+        check("T21.5", "channels", "Email channel: IMAP trigger present",
+              bool(trig and "emailReadImap" in trig["type"]))
+        check("T21.6", "safety", "Email channel: does NOT mark inbox mail as read "
+                                 "(postProcessAction=nothing)",
+              bool(trig and trig["parameters"].get("postProcessAction") == "nothing"),
+              "postProcessAction=%r" % (trig or {}).get("parameters", {}).get("postProcessAction"))
+        check("T21.7", "safety", "Email channel: only answers mail to the dedicated "
+                                 "alias (+support) — never the whole inbox",
+              "+support" in json.dumps(N.get("Is support mail?", {}).get("parameters", {})))
+        check("T21.8", "channels", "Email channel: SMTP reply node wired + credential",
+              bool(N.get("Send Email Reply")
+                   and N["Send Email Reply"].get("credentials")))
+        check("T21.9", "channels", "Email channel: replies address the original sender "
+                                   "(expression, not a hard-coded address)",
+              "$('Prep Email Question')" in json.dumps(
+                  N.get("Send Email Reply", {}).get("parameters", {})))
+
+    # --- CRM / HTTP integration in the main workflow
+    main_wf = load_workflow(os.path.join(ROOT, "workflow", "SupportBotRAG-full.json"))
+    M = nodes_by_name(main_wf)
+    crm = M.get("Push to CRM")
+    check("T22.1", "integration", "CRM/HTTP node present in the escalation branch",
+          bool(crm and "httpRequest" in crm["type"]))
+    if crm:
+        p = crm["parameters"]
+        check("T22.2", "integration", "CRM push is a POST of a JSON body",
+              p.get("method") == "POST" and p.get("sendBody") is True
+              and p.get("specifyBody") == "json")
+        body = json.dumps(p.get("jsonBody", ""))
+        check("T22.3", "integration", "CRM payload carries the ticket id + question",
+              "question" in body and "ticket_id" in body, body[:120])
+        check("T22.4", "reliability", "A broken CRM endpoint cannot block the ticket "
+                                      "or the customer reply (onError=continue)",
+              str(crm.get("onError", "")).startswith("continue"))
+        check("T22.5", "security", "CRM endpoint is a placeholder, not a live "
+                                   "third-party URL with a token",
+              "webhook.site" not in json.dumps(p.get("url", "")),
+              json.dumps(p.get("url", ""))[:80])
+
+
+def test_code_node_syntax(workflow_dir):
+    """Every Code node's jsCode must be valid JavaScript.
+
+    Regression guard: a real bug shipped because a backslash escape was lost in
+    a JSON round-trip (the string literal received a raw newline) and the node
+    only failed at runtime.
+    """
+    import subprocess
+    import tempfile
+    files = [f for f in os.listdir(workflow_dir) if f.endswith(".json")]
+    checked = 0
+    bad = []
+    for fname in files:
+        try:
+            wf = load_workflow(os.path.join(workflow_dir, fname))
+        except Exception:  # noqa: BLE001
+            continue
+        for n in wf.get("nodes", []):
+            if not str(n["type"]).endswith(".code"):
+                continue
+            js = n["parameters"].get("jsCode") or ""
+            if not js:
+                continue
+            checked += 1
+            tmp = os.path.join(tempfile.gettempdir(), "n8n_code_check.js")
+            with open(tmp, "w", encoding="utf-8") as fh:
+                fh.write(js)
+            try:
+                r = subprocess.run(["node", "--check", tmp], capture_output=True,
+                                   timeout=30)
+                if r.returncode != 0:
+                    bad.append("%s/%s" % (fname, n["name"]))
+            except Exception as exc:  # noqa: BLE001
+                bad.append("%s/%s (%s)" % (fname, n["name"], exc))
+    check("T23.1", "quality", "All %d Code nodes in shipped workflows parse as "
+                              "valid JavaScript" % checked,
+          not bad, str(bad))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workflow", default=os.path.join(
@@ -391,6 +518,8 @@ def main():
               args.subworkflow)
     test_knowledge()
     test_site()
+    test_channels(os.path.join(ROOT, "workflow"))
+    test_code_node_syntax(os.path.join(ROOT, "workflow"))
     test_repo()
 
     failed = [r for r in RESULTS if r["status"] == "FAIL"]
@@ -399,8 +528,9 @@ def main():
     print("QA SUITE — RAG support bot            %d checks, %d failed"
           % (len(RESULTS), len(failed)))
     print("=" * (width + 26))
-    for area in ("workflow", "integration", "safety", "security", "content",
-                 "a11y", "ux", "reliability", "release", "docs"):
+    for area in ("workflow", "channels", "integration", "safety", "security",
+                 "content", "a11y", "ux", "reliability", "quality", "release",
+                 "docs"):
         rows = [r for r in RESULTS if r["area"] == area]
         if not rows:
             continue

@@ -14,7 +14,7 @@ says "I don't know" when the docs don't cover it, and hands off to a human with 
 The knowledge base is **real content** (a small business: Harbor Coffee Roasters), not dummy data:
 products, shipping, returns, wholesale, FAQ. The demo site is a real page that loads the chat widget.
 
-## Status (2026-09-16)
+## Status (2026-09-18)
 
 | # | Milestone | State | Evidence |
 |---|---|---|---|
@@ -24,6 +24,9 @@ products, shipping, returns, wholesale, FAQ. The demo site is a real page that l
 | M4 | Website widget on the demo site | **code done, needs a published workflow** | widget protocol + embed URL fixed and verified over HTTP 200; site/ is not yet served |
 | M5 | VPS deploy (Docker + Caddy + backups) | not started | Premium-tier add-on |
 | — | Handoff notification (Telegram) | **done (verified 2026-09-18)** | escalation branch runs `Insert Ticket` → `Notify Telegram` → `Reply Escalated`; execution 40 is `success` with the inserted row (`created_at`) and Telegram's `message_id` in the output — the phone push was delivered |
+| — | CRM / HTTP integration | **done (verified 2026-09-18)** | `Push to CRM` POSTs the ticket JSON to any endpoint; verified against a live webhook collector (HTTP 200, payload carries `question` + `ticket_id`); `onError: continue` so a dead endpoint can never break the ticket or the reply |
+| — | Second channel — **email** (IMAP in / SMTP out) | **built, not release-ready** | `workflow/SupportBotEmail-channel.json`; answers only mail sent to the dedicated `+support` alias and never marks inbox mail as read. Blocked by an n8n/Gmail IMAP trigger defect — see QA report B4 |
+| — | Second channel — **Telegram** | **built, needs a public endpoint** | `workflow/SupportBotTelegram-channel.json`; n8n's Telegram trigger is webhook-only, so it cannot receive while n8n is reachable only on `127.0.0.1` |
 
 ### 2026-09-18 — two real defects found and fixed
 
