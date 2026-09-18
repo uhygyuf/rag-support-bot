@@ -19,7 +19,13 @@
      300
     ],
     "id": "4f23c7d9-bf85-4856-b079-cc7960aa664f",
-    "name": "Email Trigger (IMAP)"
+    "name": "Email Trigger (IMAP)",
+    "credentials": {
+     "imap": {
+      "id": "LA5QBt05vQlXu5PY",
+      "name": "IMAP account"
+     }
+    }
    },
    {
     "parameters": {
@@ -56,7 +62,7 @@
    {
     "parameters": {
      "mode": "runOnceForAllItems",
-     "jsCode": "const m = $input.first().json;\nconst raw = (m.textPlain || m.text || '').toString();\nconst clean = raw.split('\n').filter(function (l) { return l.trim().charAt(0) !== '>'; }).join('\n').trim();\nlet from = m.from;\nif (from && typeof from === 'object') { from = (from.value && from.value[0] && from.value[0].address) || from.text || ''; }\nreturn [{ json: { question: clean.slice(0, 1500), from: String(from || ''), subject: String(m.subject || '') } }];"
+     "jsCode": "const m = $input.first().json;\nconst raw = (m.textPlain || m.text || '').toString();\nconst lines = raw.split(/\\r?\\n/);\nconst clean = lines.filter(function (l) { return l.trim().charAt(0) !== '>'; }).join('\\n').trim();\nlet from = m.from;\nif (from && typeof from === 'object') { from = (from.value && from.value[0] && from.value[0].address) || from.text || ''; }\nreturn [{ json: { question: clean.slice(0, 1500), from: String(from || ''), subject: String(m.subject || '') } }];"
     },
     "type": "n8n-nodes-base.code",
     "typeVersion": 2,
@@ -343,7 +349,13 @@
     "name": "Send Email Reply",
     "retryOnFail": true,
     "maxTries": 2,
-    "waitBetweenTries": 3000
+    "waitBetweenTries": 3000,
+    "credentials": {
+     "smtp": {
+      "id": "RoVOo97jasbqF2eW",
+      "name": "SMTP account"
+     }
+    }
    },
    {
     "parameters": {},
