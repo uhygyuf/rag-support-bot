@@ -32,7 +32,7 @@
   "area": "workflow",
   "desc": "Escalation is deterministic (no reliance on the model choosing a tool)",
   "status": "PASS",
-  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Ticket Question', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'When chat message received']"
+  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Ticket Question', 'Push to CRM', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'When chat message received']"
  },
  {
   "id": "T1.6",
