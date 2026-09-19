@@ -509,6 +509,36 @@ def test_error_alerts(workflow_dir):
           "trigger" in js and "execution" in js)
 
 
+def test_gmail_channel(workflow_dir):
+    """Gmail-API variant of the email channel (replaces the flaky IMAP trigger)."""
+    path = os.path.join(workflow_dir, "SupportBotEmailGmail-channel.json")
+    if not os.path.exists(path):
+        return check("T26.1", "channels", "Gmail-API email channel shipped", False, path)
+    wf = load_workflow(path)
+    N = nodes_by_name(wf)
+    blob = json.dumps(wf, ensure_ascii=False)
+    trig = next((n for n in wf["nodes"] if "gmailTrigger" in n["type"]), None)
+    check("T26.1", "channels", "Gmail trigger present (API + OAuth2, no IMAP)",
+          trig is not None and "gmailOAuth2" in json.dumps(trig.get("credentials", {})))
+    check("T26.2", "safety", "Trigger filters server-side on the dedicated alias",
+          bool(trig) and "+support" in json.dumps(trig["parameters"].get("filters", {})))
+    send = N.get("Send Gmail Reply")
+    check("T26.3", "channels", "Reply is sent through the Gmail API to the original sender",
+          bool(send) and send["parameters"].get("operation") == "send"
+          and "Prep Email Question" in json.dumps(send["parameters"]))
+    check("T26.4", "reliability", "Handled mail is marked read (no duplicate answers)",
+          bool(N.get("Mark handled as read"))
+          and N["Mark handled as read"]["parameters"].get("operation") == "markAsRead")
+    check("T26.5", "channels", "Same knowledge base + escalation as every other channel",
+          "Supabase Vector Store (Tool)" in N and "If escalated" in N and "Insert Ticket" in N)
+    check("T26.6", "channels", "No personal data committed",
+          not re.search(r"[A-Za-z0-9._%+-]+@gmail\.com|\b\d{9,11}\b", blob)
+          and "@example.com" in blob)
+    js = N.get("Prep Email Question", {}).get("parameters", {}).get("jsCode", "")
+    check("T26.7", "channels", "MIME parsing is defensive (plain text, base64url, header lookup)",
+          "findText" in js and "base64" in js and "header(" in js)
+
+
 def test_code_node_syntax(workflow_dir):
     """Every Code node's jsCode must be valid JavaScript.
 
@@ -566,6 +596,7 @@ def main():
     test_knowledge()
     test_site()
     test_channels(os.path.join(ROOT, "workflow"))
+    test_gmail_channel(os.path.join(ROOT, "workflow"))
     test_input_guard()
     test_error_alerts(os.path.join(ROOT, "workflow"))
     test_code_node_syntax(os.path.join(ROOT, "workflow"))

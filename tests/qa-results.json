@@ -714,6 +714,55 @@
   "detail": "\"PUT_YOUR_CRM_WEBHOOK_URL\""
  },
  {
+  "id": "T26.1",
+  "area": "channels",
+  "desc": "Gmail trigger present (API + OAuth2, no IMAP)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T26.2",
+  "area": "safety",
+  "desc": "Trigger filters server-side on the dedicated alias",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T26.3",
+  "area": "channels",
+  "desc": "Reply is sent through the Gmail API to the original sender",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T26.4",
+  "area": "reliability",
+  "desc": "Handled mail is marked read (no duplicate answers)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T26.5",
+  "area": "channels",
+  "desc": "Same knowledge base + escalation as every other channel",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T26.6",
+  "area": "channels",
+  "desc": "No personal data committed",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T26.7",
+  "area": "channels",
+  "desc": "MIME parsing is defensive (plain text, base64url, header lookup)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T25.1",
   "area": "reliability",
   "desc": "Chat trigger routes through an input-validation node (an empty/malformed body must not reach the model)",
@@ -772,7 +821,7 @@
  {
   "id": "T23.1",
   "area": "quality",
-  "desc": "All 12 Code nodes in shipped workflows parse as valid JavaScript",
+  "desc": "All 16 Code nodes in shipped workflows parse as valid JavaScript",
   "status": "PASS",
   "detail": "[]"
  },
