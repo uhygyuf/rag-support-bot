@@ -730,7 +730,7 @@
  {
   "id": "T26.3",
   "area": "channels",
-  "desc": "Reply is sent through the Gmail API to the original sender",
+  "desc": "Reply goes back through the Gmail API as a threaded reply",
   "status": "PASS",
   "detail": ""
  },
@@ -759,6 +759,41 @@
   "id": "T26.7",
   "area": "channels",
   "desc": "MIME parsing is defensive (plain text, base64url, header lookup)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T27.1",
+  "area": "channels",
+  "desc": "Alias gate has exactly one rule (to contains +support)",
+  "status": "PASS",
+  "detail": "found 1 condition(s): [{\"id\": \"s1\", \"leftValue\": \"={{ $json.to }}\", \"rightValue\": \"+support\", \"operator\": {\"type\": \"string\", \"operation\": \"contains\"}}]"
+ },
+ {
+  "id": "T27.2",
+  "area": "channels",
+  "desc": "Parser accepts the structured trigger shape AND the raw Gmail API shape",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T27.3",
+  "area": "channels",
+  "desc": "Empty body falls back to the subject (subject-only mail must not get a greeting reply)",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T27.4",
+  "area": "reliability",
+  "desc": "markAsRead uses the Gmail API id, not the RFC Message-ID",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T27.5",
+  "area": "channels",
+  "desc": "Reply is threaded (reply op + messageId of the parsed mail)",
   "status": "PASS",
   "detail": ""
  },

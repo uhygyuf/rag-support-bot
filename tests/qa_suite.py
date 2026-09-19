@@ -523,8 +523,8 @@ def test_gmail_channel(workflow_dir):
     check("T26.2", "safety", "Trigger filters server-side on the dedicated alias",
           bool(trig) and "+support" in json.dumps(trig["parameters"].get("filters", {})))
     send = N.get("Send Gmail Reply")
-    check("T26.3", "channels", "Reply is sent through the Gmail API to the original sender",
-          bool(send) and send["parameters"].get("operation") == "send"
+    check("T26.3", "channels", "Reply goes back through the Gmail API as a threaded reply",
+          bool(send) and send["parameters"].get("operation") == "reply"
           and "Prep Email Question" in json.dumps(send["parameters"]))
     check("T26.4", "reliability", "Handled mail is marked read (no duplicate answers)",
           bool(N.get("Mark handled as read"))
@@ -536,7 +536,29 @@ def test_gmail_channel(workflow_dir):
           and "@example.com" in blob)
     js = N.get("Prep Email Question", {}).get("parameters", {}).get("jsCode", "")
     check("T26.7", "channels", "MIME parsing is defensive (plain text, base64url, header lookup)",
-          "findText" in js and "base64" in js and "header(" in js)
+          ("findPlainText" in js or "findText" in js) and "base64" in js
+          and ("rawHeader(" in js or "header(" in js))
+
+    # --- Regressions found by the live Gmail end-to-end runs -----------------
+    # Each one shipped in the workflow and only showed up against the real Gmail
+    # API; the assertions below exist so they cannot come back unnoticed.
+    alias_if = N.get("Is a support mail?")
+    conds = ((alias_if or {}).get("parameters", {}).get("conditions", {})
+             .get("conditions", []))
+    check("T27.1", "channels", "Alias gate has exactly one rule (to contains +support)",
+          len(conds) == 1 and "+support" in json.dumps(conds),
+          "found %d condition(s): %s" % (len(conds), json.dumps(conds, ensure_ascii=False)))
+    check("T27.2", "channels", "Parser accepts the structured trigger shape AND the raw "
+                               "Gmail API shape",
+          "value.value" in js and "m.payload" in js and "addressOf" in js)
+    check("T27.3", "channels", "Empty body falls back to the subject (subject-only mail "
+                               "must not get a greeting reply)",
+          "if (!question)" in js and "subject" in js)
+    check("T27.4", "reliability", "markAsRead uses the Gmail API id, not the RFC Message-ID",
+          "messageId: m.id" in js and "rfcMessageId" in js)
+    check("T27.5", "channels", "Reply is threaded (reply op + messageId of the parsed mail)",
+          bool(send) and send["parameters"].get("operation") == "reply"
+          and "Prep Email Question" in str(send["parameters"].get("messageId")))
 
 
 def test_code_node_syntax(workflow_dir):
