@@ -14,7 +14,7 @@ says "I don't know" when the docs don't cover it, and hands off to a human with 
 The knowledge base is **real content** (a small business: Harbor Coffee Roasters), not dummy data:
 products, shipping, returns, wholesale, FAQ. The demo site is a real page that loads the chat widget.
 
-## Status (2026-09-18)
+## Status (2026-09-19)
 
 | # | Milestone | State | Evidence |
 |---|---|---|---|
@@ -25,7 +25,7 @@ products, shipping, returns, wholesale, FAQ. The demo site is a real page that l
 | M5 | VPS deploy (Docker + Caddy + backups) | not started | Premium-tier add-on |
 | — | Handoff notification (Telegram) | **done (verified 2026-09-18)** | escalation branch runs `Insert Ticket` → `Notify Telegram` → `Reply Escalated`; execution 40 is `success` with the inserted row (`created_at`) and Telegram's `message_id` in the output — the phone push was delivered |
 | — | CRM / HTTP integration | **done (verified 2026-09-18)** | `Push to CRM` POSTs the ticket JSON to any endpoint; verified against a live webhook collector (HTTP 200, payload carries `question` + `ticket_id`); `onError: continue` so a dead endpoint can never break the ticket or the reply |
-| — | Second channel — **email** (IMAP in / SMTP out) | **built, not release-ready** | `workflow/SupportBotEmail-channel.json`; answers only mail sent to the dedicated `+support` alias and never marks inbox mail as read. Blocked by an n8n/Gmail IMAP trigger defect — see QA report B4 |
+| — | Second channel — **email** (Gmail API, threaded) | **done (verified 2026-09-19)** | `workflow/SupportBotEmailGmail-channel.json`; live run: question parsed, answer returned with a `[faq.md]` citation, reply delivered **inside the customer's thread**, original marked read. Five defects were found and fixed by that run — see `docs/qa-report-2026-09-19-email-channel.md` |
 | — | Second channel — **Telegram** | **done (verified 2026-09-18)** | `workflow/SupportBotTelegram-channel.json`; message received → same Agent answered → reply delivered (`message_id` 9) after exposing n8n through a Cloudflare quick tunnel with `WEBHOOK_URL` set. Start with `D:\Tools
 8n\start-public.bat` |
 | — | Error alerting | **done (verified 2026-09-18)** | `workflow/SupportBotErrorAlerts.json` (n8n `Error Trigger` → Telegram). Fired on a real failure and on a real trigger-activation failure; alert delivered (`message_id` 12/13) |

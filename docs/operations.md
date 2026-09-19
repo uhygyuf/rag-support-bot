@@ -65,21 +65,40 @@ seconds. Keep it inactive except when testing.
 |---|---|---|
 | Website widget | `site/index.html` → chat webhook | production-ready |
 | Telegram | `@HarborSupport_bot` → Telegram trigger | works, **requires the public mode** (section 1) |
-| Email | IMAP `INBOX` → `+support` alias → SMTP reply | **not production-ready** — see limitations |
+| Email | Gmail API (`+support` alias) → threaded reply | production-ready (verified end-to-end 2026-09-19) |
 
 All channels share the same knowledge base (Supabase `documents`), the same Agent and the same
 escalation branch (ticket → CRM push → Telegram alert → reply), so a fix in one place benefits
 every channel.
 
+### 3.1 Email channel (Gmail API) — setup and behaviour
+
+One-time setup, once per Google account (client-side, because it is the client's own mailbox):
+
+1. Google Cloud → new project → enable **Gmail API** → OAuth client type **Web application**.
+2. Authorized redirect URI, exactly: `http://localhost:5678/rest/oauth2-credential/callback`
+   (the n8n OAuth callback is derived from `N8N_EDITOR_BASE_URL`, **not** from the tunnel URL —
+   a tunnel hostname changes on every restart and would break the redirect).
+3. While the consent screen is in **Testing**, the mailbox owner must be listed under
+   *Audience → Test users*; otherwise Google answers `403 access_denied` even for the owner.
+4. n8n → Credentials → **Gmail OAuth2 API** → paste Client ID + Secret → *Sign in with Google*.
+
+Behaviour worth knowing (both are intentional, not bugs):
+
+- The trigger polls every minute and only handles mail **newer than the last check**. Re-sending an
+  old mail you already sent will not be answered twice — that is the anti-duplicate mechanism.
+- The trigger only looks at **unread** mail and the workflow marks handled mail as read afterwards,
+  so opening a customer mail by hand *before* the poll can skip it.
+
 ---
 
 ## 4. Known limitations
 
-1. **Email channel — trigger reliability.** n8n's IMAP trigger for Gmail fails to activate
-   intermittently (`Connection ended unexpectedly`, widely reported upstream) and n8n deactivates
-   the workflow when that happens. The mailbox credentials themselves are fine (a plain IMAP client
-   logs in and reads the inbox). Production options: switch to the Gmail node with OAuth2, or use a
-   provider with stable IDLE support. Do not sell this channel until it is resolved.
+1. **Email channel — IMAP path is retired.** The old IMAP trigger failed to activate intermittently
+   on Gmail (`Connection ended unexpectedly`, widely reported upstream). It is replaced by the
+   Gmail-API channel (section 3.1), which is verified end-to-end. The OAuth app itself lives in the
+   **client's** Google Cloud project, so each customer needs the four setup steps once; treat that
+   as part of onboarding, not as a defect.
 2. **Quick-tunnel URLs are not permanent.** `*.trycloudflare.com` names change on every start, so the
    Telegram webhook registration changes with them. `start-public.bat` handles this automatically,
    but for a permanently hosted instance use a real host (VPS + a named Cloudflare tunnel or the
