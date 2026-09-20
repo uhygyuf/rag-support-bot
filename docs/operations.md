@@ -22,6 +22,29 @@ webhook registration. Telegram then refuses to deliver and answers `Bad Request:
 HTTPS URL must be provided for webhook`. That failure is invisible from the browser — it only shows
 up in Telegram's API or through the error-alert workflow.
 
+### Recording a demo (one command)
+
+```
+E:\Hermes\Projects\rag-support-bot\start-demo.bat
+```
+
+Starts n8n in public mode if it is not running (waiting until the editor really answers), reports
+whether the tunnel is live, clears the QA rows from the Supabase `tickets` table so the escalation
+shot shows exactly one row, opens `site/index.html`, and prints the 60-second shot list.
+
+| Switch | Effect |
+|---|---|
+| `-KeepTickets` | leave the tickets table alone |
+| `-NoBrowser` | do not open the page |
+
+Secrets live outside the repo in `D:\Tools\n8n\demo-secrets.json`
+(`{"supabaseUrl": "...", "serviceKey": "..."}`). Two practical notes learned from running it:
+PowerShell 5.1's `Invoke-RestMethod` gets a 401 for the new-style `sb_secret_...` Supabase keys, so
+the cleanup shells out to `curl.exe` and feeds it the key through a throwaway config file (never
+argv); and the quick tunnel can be up but refused by the edge (`Unauthorized: Tunnel not found`) —
+the watchdog's repair branch fixes it, and until it does, film that one shot from the alert already
+sitting in the Telegram bot chat.
+
 ---
 
 ## 2. Error alerting (n8n's native pattern)

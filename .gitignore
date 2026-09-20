@@ -12,3 +12,7 @@ export/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# demo secrets (kept outside the repo; this is a safety net)
+demo-secrets.json
+demo/*secrets*.json
