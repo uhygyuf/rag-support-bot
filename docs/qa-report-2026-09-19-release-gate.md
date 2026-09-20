@@ -6,10 +6,11 @@ API responses; nothing here is inferred or claimed without a run behind it.
 
 ## A. Executive summary
 
-**Conditional release.** All automated and live functional tests pass (127/127 static, 10/10 live E2E),
-but the round exposed one **P0 operational gap**: the service had died silently and nothing noticed.
-Functionally the product is releasable; for anything client-facing the availability gap must be closed
-first (one config flag on the existing watchdog — see D1).
+**Conditional release → release recommended after the D1 fix (2026-09-20).**
+All automated and live functional tests pass (127/127 static, 10/10 live E2E). The round exposed one
+**P0 operational gap** — the service had died silently and nothing noticed — which was then fixed and
+re-verified (crash recovery + out-of-band alerting on the existing watchdog). With that closed only
+P2/P3 remain, both documented below, so the product is releasable.
 
 ## B. Environment, commands, scope
 
@@ -41,17 +42,24 @@ email answer with citation in the customer's thread, mark-as-read, ticket + CRM 
 
 ## D. Defects
 
-**D1 — P0 — Silent service death, nobody notified.**
-Reproduction: let the n8n window/process end (crash, closing the console, reboot). Actual: all channels
-stop; `watchdog.log` records `service is not running - nothing to watch (no autostart by design)`
-repeatedly; the tunnel dies with it; n8n's own error alerting cannot fire because n8n *is* the failed
-component. Detected only because the live E2E suite was run. Expected: the operator learns within
-minutes and the service comes back. Root cause: the watchdog's "never start anything" rule (added to
-honour "no autostart at boot") also suppresses **crash recovery**, and nothing checks liveness from
-outside n8n. Recommended fix: add an opt-in `autoStart: true` to the watchdog — it restarts the
-service and the tunnel when they are down (still nothing at Windows boot), and send the alert
-out-of-band through the Telegram Bot API from the script itself, since n8n cannot report its own death.
-Not applied: it changes runtime behaviour the user explicitly configured, so it is proposed, not assumed.
+**D1 — P0 — Silent service death, nobody notified. → FIXED 2026-09-20**
+Reproduction: let the n8n window/process end (crash, closing the console, reboot). Actual (before the
+fix): all channels stop; `watchdog.log` records `service is not running - nothing to watch` repeatedly;
+the tunnel dies with it; n8n's own error alerting cannot fire because n8n *is* the failed component.
+Detected only because the live E2E suite was run. Root cause: the watchdog's "never start anything"
+rule (added to honour "no autostart at boot") also suppressed **crash recovery**, and nothing checked
+liveness from outside n8n.
+
+Fix (applied, `service-tunnel-watchdog` `d820806`): the watchdog takes `autoStart` (start a dead
+service again; tunnel first if that died too, so the service returns with the right public URL — still
+nothing at Windows boot) and `notify` (alerts sent by the script itself to the Telegram Bot API, so
+they survive the service being down, rate-limited by `remindMinutes`, token in a separate secrets file
+that never reaches the log). Sandbox tests 14 → 21.
+
+Verified on the live instance by inducing both failures: service+tunnel killed → `repaired: service
+started again`, alert `message_id 35`; tunnel connected but unreachable at the edge → `repaired: tunnel
+…, service restarted`, alert `message_id 36`; both times local and public returned HTTP 200 afterwards
+and the Telegram webhook re-registered itself against the new hostname.
 
 **D2 — P2 — Demo page can only talk to a local instance.**
 `site/index.html` ships `data-webhook="http://127.0.0.1:5678/webhook/<id>/chat"`. Actual: fine on the
@@ -92,5 +100,5 @@ beyond watching for recurrence; if it returns, capture the poll context before c
 | No unresolved P0/P1 in *functionality* | PASS |
 | Critical end-to-end journeys pass | PASS |
 | No known high-severity security issue or secret leak | PASS (`/rest/login` requires auth; decrypted exports removed) |
-| Rollback path, monitoring, operational docs | PARTIAL — alerting exists, but liveness monitoring does not (D1) |
+| Rollback path, monitoring, operational docs | PASS — alerting exists and liveness is now covered by the watchdog: crash recovery + out-of-band Telegram alerts (D1, fixed and re-verified 2026-09-20) |
 | Remaining P2/P3 documented | PASS (D2, D3 + section F) |

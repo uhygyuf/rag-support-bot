@@ -109,7 +109,34 @@ Behaviour worth knowing (both are intentional, not bugs):
 
 ---
 
-## 5. Console-window hygiene (automatic)
+## 5. Availability (crash recovery + out-of-band alerts)
+
+Two mechanisms watch the instance while Windows is on. Neither starts anything at Windows boot — the
+service only exists while the machine is running, and that is deliberate.
+
+| Mechanism | What it does |
+|---|---|
+| `D:\Tools\n8n\watchdog-n8n.ps1` (scheduled task **"n8n watchdog"**, every 5 min) | if the tunnel died or stopped answering, starts a fresh tunnel and restarts n8n with the new public URL in `WEBHOOK_URL`; if n8n itself is down, starts it again (`autoStart: true`) |
+| the same script's alerting (`notify.enabled`) | sends the alert **itself** to the Telegram Bot API — n8n cannot report its own death. Repeated alerts are rate-limited (`remindMinutes`, 60) |
+
+Credentials for the alert live in `D:\Tools\n8n\watchdog-secrets.json` (restricted file, never inside
+the workflow and never in the log); the shareable config keeps only the file path. Log:
+`D:\Tools\n8n\watchdog.log` — one line per scan.
+
+Verified by inducing both failures on purpose (2026-09-20):
+
+| Failure | Result |
+|---|---|
+| n8n + tunnel killed | `repaired: service started again, tunnel <new url>` + alert `message_id 35`; local and public HTTP 200 afterwards |
+| tunnel connected but unreachable at the edge | `repaired: tunnel <new url>, service restarted` + alert `message_id 36` |
+
+The generic version of this tool is a public repo: **github.com/uhygyuf/service-tunnel-watchdog**
+(21 sandbox tests, including "alert is delivered", "token never reaches the log", "recovery stays
+opt-in").
+
+---
+
+## 6. Console-window hygiene (automatic)
 
 Restarting n8n repeatedly used to leave a growing pile of console windows: `n8n-serve.bat` ends
 with `pause`, so when the n8n process exits the window sits waiting for a keypress forever, and

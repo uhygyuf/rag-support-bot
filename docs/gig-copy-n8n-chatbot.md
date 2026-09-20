@@ -34,6 +34,27 @@ Derived from a live scrape of the niche: **111 competing gigs** (start price, ra
 
 ---
 
+## What is actually proven (write the listing from this, nothing else)
+
+Every ✅ below was verified on the running build; the parenthesised evidence lives in
+`docs/qa-report-*.md` and in the n8n execution data.
+
+| Promised | State | Evidence |
+|---|---|---|
+| Website chat: answers from the client's own documents, source shown | ✅ | live E2E 10/10; answers carry `[faq.md]` |
+| Never invents an answer: refuses, then escalates | ✅ | out-of-KB + prompt-injection tests |
+| Human handoff → ticket + team alert | ✅ | exec 112: ticket row + Telegram `message_id` |
+| CRM / webhook push | ✅ | live collector answered HTTP 200 with the ticket payload |
+| Telegram channel | ✅ | round trip `message_id 9` |
+| Email channel (Gmail API) | ✅ | exec 114: answer with citation, **threaded** reply, original marked read |
+| Crash recovery + external monitoring | ✅ | watchdog repaired two induced failures and alerted (`message_id 35/36`) |
+| Slack channel | ⚪ not built | build on request — a few hours with a test workspace |
+| VPS / server deployment | ⚪ **quote only** | the dev machine has no Docker, so it cannot be verified here and is therefore *not* promised as a fixed package; it is done on the client's own server when ordered |
+
+**Rule: if it is not a ✅ row, do not promise it in the listing.**
+
+---
+
 ## Description (≤1200 chars — 1003 used)
 
 ```
@@ -45,6 +66,7 @@ What you get:
 - Answers from your documents, with the source file shown
 - No guessing: unanswerable questions become tickets, never fiction
 - Human handoff, so no customer is ever stuck
+- Website chat, plus optional Telegram and email channels
 - You own it: the full n8n workflow is delivered as a file, no monthly fee to me
 - Branded chat widget with a welcome message and one-click starting questions
 
