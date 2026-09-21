@@ -16,3 +16,18 @@ desktop.ini
 # demo secrets (kept outside the repo; this is a safety net)
 demo-secrets.json
 demo/*secrets*.json
+
+# demo video work dir: keep the render pipeline scripts, ignore heavy/derived media
+demo/video/*.mp4
+demo/video/*.ogg
+demo/video/*.ttf
+demo/video/frames/
+demo/video/chatframes/
+demo/video/finframes/
+demo/video/verify*/
+demo/video/priv/
+demo/video/capt/
+demo/video/fin/
+demo/video/ocr*.txt
+demo/video/scene_scores.txt
+demo/video/list.txt
