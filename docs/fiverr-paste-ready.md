@@ -26,22 +26,46 @@ I will build an AI customer support agent that answers from your own docs
 
 ## 3. Scope & Pricing
 
-| Tier | Name | Description (≤100 chars) | Price | Days | Revisions |
-|---|---|---|---|---|---|
-| Basic | `FAQ Bot` | `Chat widget answering from 1 document, source shown, unsure questions become tickets.` (84) | $120 *(entered)* | 4 | 1 |
-| Standard | `Full RAG Bot` | `Up to 10 documents, multi-turn memory, custom greeting and ticket alerts to your team.` (88) | $299 *(entered)* | 7 | 2 |
-| Premium | `RAG + Integrations` | `Standard plus Telegram and email channels, CRM/webhook push and deployment guidance.` (89) | $699 *(entered)* | 10 | 3 |
+**Package columns — type these into the three "Name your package" / "Describe the details" boxes:**
 
-Market note (not for the form): comparable RAG gigs ask $150/$650/$1250 with 2/7/10 days. Your
-Premium is priced well under that; the first orders matter more than the price.
+| Field | BASIC | STANDARD | PREMIUM |
+|---|---|---|---|
+| Package name | `FAQ Bot` | `Full RAG Bot` | `RAG + Integrations` |
+| Description (≤100 chars) | `Chat widget answering from 1 document, source shown, unsure questions become tickets.` (84) | `Up to 10 documents, multi-turn memory, custom greeting and ticket alerts to your team.` (88) | `Standard plus Telegram and email channels, CRM/webhook push and deployment guidance.` (89) |
+| Delivery time (`DELIVERY TIME → SELECT`) | `4 days` | `7 days` | `10 days` |
+| Revisions | `1` | `2` | `3` |
+| Price | `$120` | `$299` | `$699` |
 
-## 4. Add-ons (keep exactly three)
+**The fixed AI-category rows below those boxes — this is the exact grid to click:**
 
-| Add-on | Price |
-|---|---|
-| `Additional integration (Slack, WhatsApp, Helpdesk)` | $80 |
-| `Extra document pack (10 more documents)` | $40 |
-| `VPS / server deployment` | `Contact me for a quote` |
+| Row | BASIC | STANDARD | PREMIUM | Why |
+|---|---|---|---|---|
+| `Implementations` | `1` | `2` | `3` | one implementation = one website/domain |
+| `AI agents` | `1` | `1` | `2` | the agent count climbs with the tier, like the top gigs |
+| `Database integration` | ✅ | ✅ | ✅ | the vector database is baseline in every RAG gig |
+| `Training` | ⬜ | ⬜ | ⬜ | never promise training you have not delivered before |
+| `Documentation` | ✅ | ✅ | ✅ | setup guide + acceptance checklist are shipped anyway |
+
+Market note (not for the form): comparable RAG gigs ask $150/$650/$1250 with 2/7/10 days.
+
+## 4. Add extra services (Gig Extras)
+
+**Enable exactly these three; leave every other row unticked.** No prices on rows you do not
+offer — an empty price field on an enabled row is what makes a gig look unfinished.
+
+| Row on the page | Tick? | Price | Extra quantity |
+|---|---|---|---|
+| `Extra fast delivery` | ⬜ leave off | — | — |
+| `Additional implementation` | ✅ | `$80` | `1` |
+| `Additional Ai agent` | ⬜ leave off | — | — |
+| `Database integration` | ⬜ leave off (already in every package) | — | — |
+| `Training` | ⬜ leave off | — | — |
+| `Documentation` | ✅ | `$40` | `1` |
+| custom (`+ Add Gig Extra`) | ✅ | `$40` | name it `Extra document pack (10 more documents)` |
+
+VPS / server deployment is **not** an extra: extras need a fixed price and that work is quoted per
+client, so it stays in the FAQ and the description as "contact me for a quote".
+
 
 ---
 
