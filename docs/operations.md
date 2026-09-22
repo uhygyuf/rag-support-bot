@@ -8,7 +8,7 @@ How to run, expose and monitor this bot. Written for whoever operates the instan
 
 | Mode | What you double-click | What you get | When to use it |
 |---|---|---|---|
-| **Local** | `D:\Tools\n8n\n8n-serve.bat` | editor + site widget on `http://127.0.0.1:5678` only | building, testing |
+| **Local** | `%LOCALAPPDATA%\n8n\n8n-serve.bat` | editor + site widget on `http://127.0.0.1:5678` only | building, testing |
 | **Public** | `D:\Tools\n8n\start-public.bat` | the same, plus a public HTTPS URL through a Cloudflare quick tunnel | Telegram channel, demo to a client, testing from a phone |
 | **Stop** | `D:\Tools\n8n\stop-public.bat` | stops n8n **and** the tunnel | end of session |
 

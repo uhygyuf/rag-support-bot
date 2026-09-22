@@ -15,11 +15,15 @@
 set -e
 cd "$(dirname "$0")"
 
-FF="/c/Users/leo wang/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.1-full_build/bin"
-FFMPEG="$FF/ffmpeg.exe"
-FFPROBE="$FF/ffprobe.exe"
-SRC="C:/Users/leo wang/AppData/Local/hermes/attachments/Recording 2026-09-21 140129.mp4"
-WORK="E:/Hermes/Projects/rag-support-bot/demo/video"
+# Nothing here is hard-coded to one machine: set these three when you re-render.
+#   FF_BIN  directory holding ffmpeg / ffprobe   (default: wherever ffmpeg is on PATH)
+#   SRC     the screen recording to cut the demo from        (required)
+#   WORK    scratch + output directory  (default: this script's own folder)
+FF_BIN="${FF_BIN:-$(dirname "$(command -v ffmpeg || echo ./ffmpeg)")}"
+FFMPEG="${FFMPEG:-$FF_BIN/ffmpeg}"
+FFPROBE="${FFPROBE:-$FF_BIN/ffprobe}"
+: "${SRC:?set SRC to the source screen recording, e.g. SRC=./recording.mp4}"
+WORK="${WORK:-$(cd "$(dirname "$0")" && pwd)}"
 
 A_START=2.5;  A_LEN=15.5       # source 2.50 -> 18.00
 B_START=19.4; B_LEN=26.2746    # source 19.40 -> 45.6746

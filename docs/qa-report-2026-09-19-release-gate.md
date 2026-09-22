@@ -16,7 +16,7 @@ P2/P3 remain, both documented below, so the product is releasable.
 
 | Item | Value |
 |---|---|
-| n8n | 2.38.7, npm-local `D:\Tools\n8n`, SQLite `C:\Users\leo wang\.n8n` |
+| n8n | 2.38.7, npm-local `%LOCALAPPDATA%\n8n`, SQLite `%USERPROFILE%\.n8n` |
 | Public entry | Cloudflare quick tunnel (name changes per start: `https://jail-identifying-letting-routine.trycloudflare.com` at test time) |
 | Static suite | `python tests/qa_suite.py` → **127 checks, 0 failed** |
 | Live E2E | `python tests/e2e_live.py --tunnel <url>` → **10/10 passed** |
