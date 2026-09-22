@@ -126,12 +126,43 @@ The page no longer hardcodes a backend. `site/widget.js` resolves its target in 
 2. `site/backend.json` — the live tunnel address sitting next to the page (what the hosted copy uses);
 3. `data-local-webhook` — only for a page opened straight from disk (`file://`).
 
-Quick-tunnel hostnames change on every restart, so `backend.json` has to be refreshed afterwards:
-double-click `demo\publish-backend-url.bat` (or run the `.ps1`). The script reads the watchdog's
+Quick-tunnel hostnames change on every restart, so `backend.json` has to be refreshed afterwards.
+This happens **automatically** (section 3.3); the manual fallback is double-clicking
+`demo\publish-backend-url.bat` (or running the `.ps1`). The script reads the watchdog's
 `public-url.txt`, asks the bot a real question to prove the address answers, then commits and pushes
 `site/backend.json`; Pages redeploys by itself. Switches: `-NoPush` (write the file only) and
-`-SkipCheck` (publish without the live answer). While the machine is off the page still loads — the
+`-SkipCheck` (publish without the live answer). While the machine is off the page still loads; the
 widget answers with its offline line instead of hanging.
+
+### 3.3 Automatic refresh when the tunnel restarts (watchdog hook)
+
+A real incident: the tunnel restarted at 18:49 on 2026-09-22, came back on a new hostname, and the
+hosted page kept telling visitors the assistant was offline until `backend.json` was refreshed by
+hand. The watchdog now closes that gap with its `hook` (config: `D:\Tools\n8n\watchdog-config.json`):
+
+```json
+"hook": {
+  "enabled": true,
+  "command": "powershell.exe",
+  "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
+           "E:/Hermes/Projects/rag-support-bot/demo/publish-backend-url.ps1"],
+  "stateFile": "D:/Tools/n8n/hook-state.txt",
+  "timeoutSeconds": 180
+}
+```
+
+The watchdog runs that command after any repair, and on any scan where the tunnel URL differs from
+the last one the command succeeded with, so a restarted tunnel republishes its address within five
+minutes with nobody touching the machine. `hook-state.txt` records a URL only after a run that exited
+0, so a failed publish is retried on the next scan. Evidence is in `D:\Tools\n8n\watchdog.log`:
+
+```
+2026-09-22 19:01:41  healthy: service pid 46832, tunnel https://location-progress-finance-luck.trycloudflare.com
+2026-09-22 19:01:48  hook finished OK for https://location-progress-finance-luck.trycloudflare.com
+```
+
+The hook is also what makes the "only the page is permanent" limit smaller: the page stays reachable,
+and the address it talks to repairs itself as long as the machine is awake.
 
 ---
 

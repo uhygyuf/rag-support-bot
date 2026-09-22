@@ -17,6 +17,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# This script is also run unattended (from the watchdog), where a git credential prompt would hang
+# until the caller kills it. Fail fast instead: credentials must already be stored.
+$env:GIT_TERMINAL_PROMPT = '0'
+
 $repo    = 'E:\Hermes\Projects\rag-support-bot'
 $urlFile = 'D:\Tools\n8n\public-url.txt'
 $index   = Join-Path $repo 'site\index.html'
