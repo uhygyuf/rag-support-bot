@@ -32,7 +32,7 @@ the assistant is offline — the storefront itself never breaks.
 |---|---|
 | Answers from the company's documents, not from model memory | every answer ends with its source file, e.g. `… 7–14 business days. [faq.md]` |
 | Admits ignorance in one fixed sentence | `I don't have that information - I've passed your question to our team and a human will reply within 24 hours.` |
-| Never lets that sentence be an empty promise | the same turn writes a row into Supabase `tickets`, pushes it to a CRM webhook and sends the operator a Telegram alert |
+| Never lets that sentence be an empty promise | the same turn writes a row into Supabase `tickets`, pushes it to a CRM webhook and sends the operator a Telegram alert (the CRM node ships disabled with a placeholder URL — point it at your own endpoint and enable it) |
 | Follows a conversation | same-session follow-ups ("…what about Canada?") resolve against the earlier turn |
 | Same behaviour on every channel | the widget, Gmail and Telegram all run the same agent, knowledge base and escalation branch |
 | Degrades safely | if the backend is down the visitor gets one plain sentence, never an HTTP code or a stack trace |
@@ -168,7 +168,7 @@ Built-in resilience (covered by tests `T16.x` / `T17.x`):
 | the model takes too long | the widget aborts after 45 s and shows its offline line instead of spinning forever |
 | n8n restarts | the workflows stay published (that state lives in the database), so the webhook answers as soon as n8n is back |
 | a knowledge document is wrong or outdated | the bot escalates instead of guessing — fix the document and run `python tools/ingest.py --replace knowledge/<file>.md` |
-| a dead CRM endpoint | `Push to CRM` runs with `onError: continue`, so it can never break the ticket or the reply |
+| a dead CRM endpoint | `Push to CRM` runs with `onError: continue` and ships disabled with a placeholder URL, so it can never break the ticket or the reply |
 
 Operational rules while the bot is in use:
 

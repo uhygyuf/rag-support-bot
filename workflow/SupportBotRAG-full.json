@@ -1,6 +1,6 @@
 [
   {
-    "updatedAt": "2026-09-22T11:19:59.256Z",
+    "updatedAt": "2026-09-22T11:44:53.000Z",
     "createdAt": "2026-09-16T04:04:21.188Z",
     "id": "SupportBotRAGfull01",
     "name": "Support Bot (RAG) — full",
@@ -289,7 +289,8 @@
             "id": "jQOH7JyVce4o9i39",
             "name": "Supabase account"
           }
-        }
+        },
+        "onError": "continueRegularOutput"
       },
       {
         "parameters": {
@@ -363,7 +364,8 @@
         "retryOnFail": true,
         "maxTries": 2,
         "waitBetweenTries": 2000,
-        "onError": "continueRegularOutput"
+        "onError": "continueRegularOutput",
+        "disabled": true
       },
       {
         "parameters": {
@@ -627,9 +629,9 @@
     },
     "nodeGroups": [],
     "pinData": {},
-    "versionId": "9e011250-c8b8-4115-a39d-877a073146a5",
-    "activeVersionId": "971284b4-142d-4bb7-8e73-2d8c1f0aa26e",
-    "versionCounter": 47,
+    "versionId": "72c4c1ce-efa0-48cb-8b9a-eec9ed09ade3",
+    "activeVersionId": "72c4c1ce-efa0-48cb-8b9a-eec9ed09ade3",
+    "versionCounter": 48,
     "triggerCount": 2,
     "sourceWorkflowId": null,
     "tags": [],
