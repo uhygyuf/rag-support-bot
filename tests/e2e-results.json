@@ -2,37 +2,46 @@
  {
   "case": "happy_path_answer",
   "status": "PASS",
-  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping (USPS Priority). We ship Tuesdays and F",
-  "latency_s": 1.1992292404174805,
+  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping (USPS Priority). We roast and ship Tues",
+  "latency_s": 0.9463186264038086,
   "extra": {
-   "answer": "US delivery takes 2–4 business days after shipping (USPS Priority). We ship Tuesdays and Fridays; orders placed before 9am on a roast day go out the same day. [faq.md]"
+   "answer": "US delivery takes 2–4 business days after shipping (USPS Priority). We roast and ship Tuesdays and Fridays; orders placed before 9am on a roast day ship the same day. [faq.md]"
   }
  },
  {
-  "case": "citation_present",
+  "case": "citation_is_a_real_source",
   "status": "PASS",
-  "detail": "No — we don't sell machines or grinders. Our only equipment is a reusable steel ",
-  "latency_s": 0.9588580131530762,
+  "detail": "We don't sell coffee machines or grinders. We do offer a reusable steel French p",
+  "latency_s": 1.144683837890625,
   "extra": {
-   "answer": "No — we don't sell machines or grinders. Our only equipment is a reusable steel filter for French press ($14) and a ceramic V60-style dripper ($26). [catalogue.md]",
+   "answer": "We don't sell coffee machines or grinders. We do offer a reusable steel French press filter ($14) and a ceramic V60-style dripper ($26). [products.md]",
    "retry_needed": false
+  }
+ },
+ {
+  "case": "policy_document_reachable",
+  "status": "PASS",
+  "detail": "We don't offer franchise opportunities. For wholesale, private label or partnership enquir",
+  "latency_s": 0.8347980976104736,
+  "extra": {
+   "answer": "We don't offer franchise opportunities. For wholesale, private label or partnership enquiries, email wholesale@harborcoffee.example and a human will handle it. [policies.md]"
   }
  },
  {
   "case": "memory_followup",
   "status": "PASS",
-  "detail": "follow-up -> 7–14 business days to Canada after shipping. We roast and ship on Tuesdays and Fridays, an",
-  "latency_s": 1.2675323486328125,
+  "detail": "follow-up -> 7–14 business days for Canada. [faq.md]",
+  "latency_s": 1.0766239166259766,
   "extra": {
-   "first": "Yes, we do — Canada is one of our international destinations. Delivery takes 7–14 business days, with customs duties paid by the customer. [faq.md]",
-   "second": "7–14 business days to Canada after shipping. We roast and ship on Tuesdays and Fridays, and orders placed before 9am on a roast day ship the same day. [faq.md]"
+   "first": "Yes, we ship to Canada — 7–14 business days, with customs duties paid by the customer. [faq.md]",
+   "second": "7–14 business days for Canada. [faq.md]"
   }
  },
  {
   "case": "escalation_reply",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 4.332644939422607,
+  "latency_s": 4.562805414199829,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -41,7 +50,7 @@
   "case": "injection_refused",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 4.473469257354736,
+  "latency_s": 4.569942951202393,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -50,35 +59,35 @@
   "case": "malformed_body_survives",
   "status": "PASS",
   "detail": "HTTP 200 | {\"output\":\"I didn't catch that — could you please retype your question",
-  "latency_s": 0.09800577163696289,
+  "latency_s": 0.09930038452148438,
   "extra": {}
  },
  {
   "case": "empty_input_survives",
   "status": "PASS",
   "detail": "HTTP 200 | I didn't catch that — could you please retype your question? I can hel",
-  "latency_s": 0.0789022445678711,
+  "latency_s": 0.07878804206848145,
   "extra": {}
  },
  {
   "case": "long_input_survives",
   "status": "PASS",
-  "detail": "HTTP 200, 2160 chars in, 279 chars out",
-  "latency_s": 1.4427490234375,
+  "detail": "HTTP 200, 2160 chars in, 343 chars out",
+  "latency_s": 3.8277313709259033,
   "extra": {}
  },
  {
   "case": "concurrent_3_visitors",
   "status": "PASS",
-  "detail": "3/3 ok, wall 1.1s, max 1.1s",
-  "latency_s": 1.1313087940216064,
+  "detail": "3/3 ok, wall 1.0s, max 1.0s",
+  "latency_s": 0.9927582740783691,
   "extra": {}
  },
  {
   "case": "public_tunnel_reachable",
   "status": "PASS",
-  "detail": "HTTP 200 via https://factory-control-smooth-canvas.trycloudflare.com",
-  "latency_s": 4.573554754257202,
+  "detail": "HTTP 200 via https://location-progress-finance-luck.trycloudflare.com",
+  "latency_s": 4.749706745147705,
   "extra": {}
  }
 ]

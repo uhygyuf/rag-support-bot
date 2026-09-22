@@ -80,19 +80,30 @@ def main():
     record("happy_path_answer", st == 200 and "2" in ans and "[faq.md]" in ans,
            "HTTP %s | %s" % (st, ans[:90]), dt, {"answer": ans})
 
-    # --- 2. citation contract (answers must name a source file).
-    # The model complies ~90% of the time; a missing citation is LLM variance, not
-    # a wiring fault, so allow ONE retry and record that it was needed.
+    # --- 2. citation contract (the answer must name the file the fact came from).
+    # A bracket of any kind is not a citation: the knowledge base holds three files, so an
+    # answer has to name one of them. Until 2026-09-22 this case accepted any "....md]" text,
+    # which is why it passed while every chunk carried metadata.source = "blob" and product
+    # answers were labelled "[blob]".
+    SOURCES = ("[faq.md]", "[policies.md]", "[products.md]")
     st, body, dt = ask(base, "Do you sell coffee machines and grinders?", "e2e-happy")
     ans = out_of(body)
     retried = False
-    if ".md]" not in ans:
+    if not any(s in ans for s in SOURCES):
         retried = True
         st, body, dt = ask(base, "Do you sell coffee machines and grinders?", "e2e-happy-2")
         ans = out_of(body)
-    record("citation_present", st == 200 and "[" in ans and ".md]" in ans,
+    record("citation_is_a_real_source", st == 200 and any(s in ans for s in SOURCES),
            ("(retry needed) " if retried else "") + ans[:80], dt,
            {"answer": ans, "retry_needed": retried})
+
+    # --- 2b. a fact that only knowledge/policies.md carries. That file was missing from the
+    # knowledge base, so this question used to be escalated to a human instead of answered.
+    st, body, dt = ask(base, "Do you offer franchise opportunities?", "e2e-policy")
+    ans = out_of(body)
+    record("policy_document_reachable",
+           st == 200 and "franchise" in ans.lower() and HANDOFF not in ans,
+           ans[:90], dt, {"answer": ans})
 
     # --- 3. multi-turn memory (follow-up must inherit context)
     st1, b1, d1 = ask(base, "Do you ship to Canada?", "e2e-memory")

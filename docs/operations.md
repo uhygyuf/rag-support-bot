@@ -164,6 +164,35 @@ minutes with nobody touching the machine. `hook-state.txt` records a URL only af
 The hook is also what makes the "only the page is permanent" limit smaller: the page stays reachable,
 and the address it talks to repairs itself as long as the machine is awake.
 
+### 3.4 Knowledge base: how a document gets in
+
+```powershell
+python tools/ingest.py --dry-run                 # chunk plan, nothing is sent
+python tools/ingest.py --replace                 # every *.md in knowledge/
+python tools/ingest.py --replace knowledge/faq.md
+```
+
+The script splits each file into blocks of at most 900 characters, embeds them with the same model the
+workflow uses (`BAAI/bge-m3`, SiliconFlow, 1024 dimensions) and writes rows into Supabase `documents`
+with `metadata = {source: "<file>.md", loc: {lines: {from, to}}, blobType}`. Answers are grounded in
+those rows, and the `source` value is what the agent cites, so a correct label is what makes a citation
+mean anything.
+
+Credentials come from a local JSON file (`D:\Tools\n8n\demo-secrets.json`, `--secrets` to point
+elsewhere) with four fields: `supabaseUrl`, `serviceKey`, `siliconflowUrl`, `siliconflowKey`. Keep it
+outside the repository. Two header traps are handled inside the script: Supabase wants the service key
+in **both** the `apikey` and the `Authorization` header (a bearer-only request is answered 401 "No API
+key found in request"), and the embedding endpoint rejects requests without a normal `User-Agent`.
+
+**The workflow's upload form cannot label chunks.** n8n 2.38.7's binary data loader hardcodes
+`metadata.source = "blob"` for binary input, and version 1.1 of that node has no metadata parameter
+(inspected in `node_modules/@n8n/n8n-nodes-langchain/.../DocumentDefaultDataLoader.node.js`; the
+`metadata` field exists only in the sub-node schema, not in the node's own parameters). Evidence: three
+files uploaded through the form on 2026-09-22 produced executions 195/196/197 where the binary carried
+`fileName="policies.md"` and the loader still stored `"source": "blob"`. Uploads through the form are
+therefore fine for experiments and wrong for anything a customer reads; use the script, or replace the
+loader with a node that can set metadata.
+
 ---
 
 ## 4. Known limitations
@@ -180,6 +209,9 @@ and the address it talks to repairs itself as long as the machine is awake.
 3. **Exposing n8n exposes the chat endpoint.** While the tunnel is up, anyone who knows the URL can
    send messages and consume the configured LLM quota. Stop the tunnel when you are done.
 4. **No ticket dashboard.** Tickets live in the Supabase `tickets` table; there is no UI yet.
+5. **The workflow's upload form stores an unusable source label** (`metadata.source = "blob"`, see
+   section 3.4). Documents that customers will be answered from must be loaded with
+   `tools/ingest.py`, otherwise the answer cannot name the file it came from.
 
 ---
 

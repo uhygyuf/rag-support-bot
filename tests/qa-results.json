@@ -32,7 +32,7 @@
   "area": "workflow",
   "desc": "Escalation is deterministic (no reliance on the model choosing a tool)",
   "status": "PASS",
-  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Ticket Question', 'Push to CRM', 'Reply Empty Input', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'Valid input?', 'When chat message received']"
+  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Knowledge File', 'Prep Ticket Question', 'Push to CRM', 'Reply Empty Input', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'Valid input?', 'When chat message received']"
  },
  {
   "id": "T1.6",
@@ -137,7 +137,7 @@
   "area": "workflow",
   "desc": "Ticket insert targets the row/create operation",
   "status": "PASS",
-  "detail": ""
+  "detail": "resource=None operation=None (omitted means the n8n default)"
  },
  {
   "id": "T4.6",
@@ -158,7 +158,7 @@
   "area": "workflow",
   "desc": "Notification node is a Telegram sendMessage",
   "status": "PASS",
-  "detail": ""
+  "detail": "operation=None (the editor omits the default)"
  },
  {
   "id": "T4.9",
@@ -261,16 +261,16 @@
  {
   "id": "T6.6",
   "area": "ux",
-  "desc": "Chat trigger offers >= 4 quick-start options",
+  "desc": "Quick-start options reach the visitor (widget chips)",
   "status": "PASS",
-  "detail": "found 6"
+  "detail": "chips=6"
  },
  {
   "id": "T6.7",
   "area": "ux",
-  "desc": "Assistant identity set (name/description/icon)",
+  "desc": "Assistant identity shown by the widget",
   "status": "PASS",
-  "detail": "name='Harbor Support'"
+  "detail": "brand string present in site/index.html"
  },
  {
   "id": "T17.1",
@@ -445,7 +445,7 @@
   "area": "integration",
   "desc": "hosted backend.json points at a chat webhook",
   "status": "PASS",
-  "detail": "https://factory-control-smooth-canvas.trycloudflare.com/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
+  "detail": "https://location-progress-finance-luck.trycloudflare.com/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
  },
  {
   "id": "T12.1",
@@ -721,6 +721,13 @@
   "detail": "\"PUT_YOUR_CRM_WEBHOOK_URL\""
  },
  {
+  "id": "T22.6",
+  "area": "security",
+  "desc": "No workflow file ships a live third-party endpoint",
+  "status": "PASS",
+  "detail": "workflow/*.json scanned"
+ },
+ {
   "id": "T26.1",
   "area": "channels",
   "desc": "Gmail trigger present (API + OAuth2, no IMAP)",
@@ -863,7 +870,7 @@
  {
   "id": "T23.1",
   "area": "quality",
-  "desc": "All 16 Code nodes in shipped workflows parse as valid JavaScript",
+  "desc": "All 17 Code nodes in shipped workflows parse as valid JavaScript",
   "status": "PASS",
   "detail": "[]"
  },
@@ -905,8 +912,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (130)",
+  "desc": "README states the real number of checks (131)",
   "status": "PASS",
-  "detail": "README says 130"
+  "detail": "README says 131"
  }
 ]

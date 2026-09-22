@@ -16,11 +16,13 @@ actually usable):
 | Surface | Verdict | Condition |
 |---|---|---|
 | Demo website `https://uhygyuf.github.io/rag-support-bot/` (static page + widget) | **Release** | none — the page loads with the machine off; live answers need the machine running |
-| Live answers (website widget / Telegram / Gmail) | **Conditional release** | fix BUG-1 (citation label) and BUG-2 (missing document) before showing the answering behaviour to a customer or an assessor |
+| Live answers (website widget / Telegram / Gmail) | **Release** | BUG-1 and BUG-2 were fixed and re-verified on 2026-09-22 (section H): the knowledge base now carries a real `source` label per chunk and all three documents are loaded |
 | Public ingress (tunnel exposing n8n) | **Conditional release** | BUG-3: the chat endpoint is unauthenticated while the tunnel is up; keep the tunnel for demos only |
-| Operational scripts (watchdog, zombie cleanup, publish-backend-url) | **Release** | verified in earlier sessions; not re-induced in this run (see B) |
+| Operational scripts (watchdog, zombie cleanup, publish-backend-url) | **Release** | verified in earlier sessions and again on 2026-09-22 (section H: the watchdog hook that republishes a changed tunnel URL) |
 
-No P0 defect. Two open defects (one P1, one P2) are in the answering behaviour, not in the plumbing.
+No P0 defect. No open P1. The two answering defects found in this pass were fixed and re-tested the
+same day; what remains open is one P2 deployment boundary (BUG-3) and the documented constraints in
+section F.
 
 ---
 
@@ -192,12 +194,68 @@ BUG-2 are gone.
 
 | Item | State |
 |---|---|
-| Static suite, lint-equivalent checks, JS parse gates | PASS (130 checks) |
-| Critical journeys pass (website path, local + public) | PASS (8 DOM + 10 live cases) |
-| No unresolved P0/P1 | **NO** — BUG-1 open (P1) |
-| No known high-severity security issue or data leak | PASS for secrets/PII; ingress exposure documented as BUG-3 |
+| Static suite, lint-equivalent checks, JS parse gates | PASS (131 checks) |
+| Critical journeys pass (website path, local + public) | PASS (8 DOM + 11 live cases) |
+| No unresolved P0/P1 | PASS — BUG-1 fixed and re-verified (section H) |
+| No known high-severity security issue or data leak | PASS for secrets/PII; ingress exposure documented as BUG-3; the live third-party CRM endpoint found in the repo copy is removed and guarded (BUG-7) |
 | Rollback / recovery path exists and is documented | PASS — watchdog + zombie cleanup + documented start/stop (`docs/operations.md`) |
 | Operational documentation exists | PASS — `docs/operations.md`, `docs/client-setup-guide.md`, `docs/acceptance-checklist.md` |
 | Deployment matches the repository | PASS (command 6) |
 | Remaining P2/P3 documented with impact | PASS — this section and D |
-| Knowledge base matches the documented content | **NO** — BUG-2 open (P2) |
+| Knowledge base matches the documented content | PASS — 3 documents, 8 chunks, each labelled with its real file name (section H) |
+
+---
+
+## H. Follow-up: fixes applied on 2026-09-22, after this report
+
+Both answering defects were fixed and re-tested in the same session.
+
+**BUG-1 (citations)** — the stored rows now carry the real file name, and the agent's rule 5 no longer
+contains a literal example to copy:
+
+- `documents` was rebuilt: 8 chunks, `metadata.source` = `faq.md` (4), `policies.md` (2),
+  `products.md` (2). Verified by reading the table back (ids 13-20).
+- Live answers now end with the file they came from:
+  `How much is the Ethiopia Guji?` → `… $22 for 250 g … [products.md]`;
+  `Do you ship to Canada?` → `… 7-14 business days … [faq.md]`;
+  `What is your environmental policy?` → `… [policies.md]`.
+- `tests/e2e_live.py` now fails on a citation that is not one of the three file names, so `[blob]`
+  cannot pass again (`citation_is_a_real_source`).
+
+**BUG-2 (missing document)** — `knowledge/policies.md` is loaded, and the question that used to be
+escalated is answered: `Do you offer franchise opportunities?` → `We don't offer franchise
+opportunities … [policies.md]` (it is line 23 of that file). A regression case,
+`policy_document_reachable`, asserts it cannot silently go back to escalating.
+
+**BUG-7 (new, P2, security) — the repository shipped a live third-party endpoint.** Refreshing
+`workflow/SupportBotRAG-full.json` from the running instance exposed that `Push to CRM` points at a
+personal `https://webhook.site/<uuid>` sink (a leftover from testing the CRM push), which had been
+copied into the public repo. The repo copy is back to `PUT_YOUR_CRM_WEBHOOK_URL` and a new check
+(`T22.6`) scans every `workflow/*.json` for `webhook.site` so it cannot return. The live instance still
+points at that sink; it receives fictional demo questions only, and it should be repointed or blanked
+when the demo is handed to anyone.
+
+**BUG-8 (new, P3) — three checks were passing on dead configuration.** Refreshing the artifact revealed
+that `T4.5`/`T4.8` demanded parameter values n8n omits when they equal the default (the editor
+normalizes them away, the behaviour is unchanged), and `T6.6`/`T6.7` asserted `suggestedPrompts`,
+`agentName` and `agentIcon` on the chat trigger, which n8n 2.38.7 does not render at all. Those two now
+assert what a visitor actually gets (the widget's own greeting and its quick-start chips, which
+`T16.2`/`T16.4` cover from the client side). The lesson: assert rendered behaviour, not configuration
+that the runtime ignores.
+
+**How the knowledge base is loaded now.** `tools/ingest.py` (new) chunks `knowledge/*.md`, embeds the
+chunks with the workflow's model and writes the rows with `metadata.source`, replacing the upload form
+for anything a customer reads. Reason: n8n 2.38.7's binary loader hardcodes `source = "blob"` and the
+node has no metadata parameter — reproductions and evidence are in `docs/operations.md` section 3.4
+(executions 195/196/197). The form node stays for experiments and is documented as such.
+
+**Re-test after the fixes** (same day):
+
+| Command | Result |
+|---|---|
+| `python tests/qa_suite.py` | `131 checks, 0 failed` / `RESULT: ALL PASS` |
+| `python tests/e2e_live.py` | `ALL PASS (10/10)`, median 3.5 s |
+| `python tests/e2e_live.py --tunnel <current tunnel>` | `ALL PASS (11/11)`, public origin 4.7 s |
+| read back `documents` | 8 chunks, sources `faq.md` / `policies.md` / `products.md` |
+| watchdog run after a tunnel restart | `hook finished OK for https://location-progress-finance-luck.trycloudflare.com`, no repeat on the next scan |
+| deployed site vs repo (`git show HEAD:site/...` vs the served file) | identical for index.html, widget.js, backend.json |

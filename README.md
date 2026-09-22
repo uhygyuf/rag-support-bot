@@ -65,8 +65,8 @@ the assistant is offline — the storefront itself never breaks.
  customer ─► email  (Gmail API)   ┼──► n8n ──► Support Agent
  customer ─► Telegram             ┘                │  (system prompt: call the KB first)
                                                    ▼
-                              Supabase pgvector knowledge base  ◄── 3 documents ingested
-                              (bge-m3 embeddings, 1024 dims)         via the ingestion form
+                              Supabase pgvector knowledge base  ◄── 3 documents, loaded by
+                              (bge-m3 embeddings, 1024 dims)         tools/ingest.py
                                                    │
                         grounded answer + [source] ◄┘
                                                    │  can't answer / customer asks for a human
@@ -87,7 +87,7 @@ the assistant is offline — the storefront itself never breaks.
 
 | Channel | Entry point | Verified |
 |---|---|---|
-| Website widget | `site/index.html` + `site/widget.js` → Chat Trigger webhook | happy path, citations, multi-turn, escalation, injection refusal — 10/10 live E2E cases |
+| Website widget | `site/index.html` + `site/widget.js` → Chat Trigger webhook | happy path, real citations, multi-turn, escalation, injection refusal — 11/11 live E2E cases |
 | Email | Gmail Trigger on the `+support` alias → threaded reply | live runs 2026-09-19 and re-verified 2026-09-22: question parsed, answer returned with a `[faq.md]` citation, reply delivered **inside the customer's thread**, original marked read |
 | Telegram | Telegram Trigger on `@HarborSupport_bot` | live run: message received → same agent answered → reply delivered (`message_id` 9) |
 | Operator alerts | escalation branch + `Error Trigger` workflow | live ticket alert and live workflow-error alert both delivered to the phone |
@@ -96,9 +96,9 @@ the assistant is offline — the storefront itself never breaks.
 
 | Suite | What it covers | Last run |
 |---|---|---|
-| `tests/qa_suite.py` | **130 static + contract checks** (workflow shape 29, channels 23, reliability 17, UX 10, a11y 10, integration 10, safety 9, content 8, release 5, docs 4, security 3, quality 3) — no network, no writes | 130 / 130 PASS |
+| `tests/qa_suite.py` | **131 static + contract checks** (workflow shape 29, channels 23, reliability 17, UX 10, a11y 10, integration 10, safety 9, content 8, release 5, docs 4, security 4, quality 3) — no network, no writes | 131 / 131 PASS |
 | `tests/widget_dom_test.js` | 8 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n) and its offline behaviour, in a stubbed DOM | 8 / 8 PASS |
-| `tests/e2e_live.py` | **10 live cases** against a running instance: `happy_path_answer`, `citation_present`, `memory_followup`, `escalation_reply`, `injection_refused`, `malformed_body_survives`, `empty_input_survives`, `long_input_survives`, `concurrent_3_visitors`, `public_tunnel_reachable` | 10 / 10 PASS |
+| `tests/e2e_live.py` | **11 live cases** against a running instance: `happy_path_answer`, `citation_is_a_real_source`, `policy_document_reachable`, `memory_followup`, `escalation_reply`, `injection_refused`, `malformed_body_survives`, `empty_input_survives`, `long_input_survives`, `concurrent_3_visitors`, `public_tunnel_reachable` | 11 / 11 PASS |
 | crash recovery + out-of-band alert | watchdog script in `D:\Tools\n8n\` (scheduled task, every 5 min); verified by inducing both failures on purpose — kill n8n + tunnel, and a tunnel that is connected but unreachable at the edge | both repaired automatically, alerts `message_id` 35 / 36 |
 
 Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.
@@ -127,8 +127,12 @@ Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.
    ```
    Credentials needed: Supabase (pgvector), DeepSeek (chat model), SiliconFlow or OpenAI
    (embeddings), Gmail OAuth2, Telegram bot. Setup detail: `docs/client-setup-guide.md`.
-2. Ingest the knowledge base: open the **On form submission** trigger in the RAG workflow and upload
-   the files from `knowledge/` — three documents, stored in Supabase `documents`.
+2. Ingest the knowledge base: `python tools/ingest.py --replace` (chunks the files in `knowledge/`,
+   calls the embedding model, and writes rows with a real `source` label). The **On form submission**
+   trigger in the RAG workflow also ingests a file, but n8n 2.38.7's binary loader stamps every chunk
+   `metadata.source = "blob"` and the node has no parameter to change it, so uploads through the form
+   produce answers that cannot name their source. Use the form for quick text experiments, the script
+   for anything a customer will see.
 3. Publish the workflows (top-right **Publish**, or `npx n8n publish:workflow --id=<id>` **while n8n
    is stopped** — the CLI cannot register a webhook into a running instance). The widget URL is
    `http://<host>:5678/webhook/<chat-trigger-webhookId>/chat`.
@@ -161,7 +165,7 @@ Built-in resilience (covered by tests `T16.x` / `T17.x`):
 | transient network / API hiccup | agent, KB tool, ticket tool, embeddings and the Supabase write each retry twice before failing |
 | the model takes too long | the widget aborts after 45 s and shows its offline line instead of spinning forever |
 | n8n restarts | the workflows stay published (that state lives in the database), so the webhook answers as soon as n8n is back |
-| a knowledge document is wrong or outdated | the bot escalates instead of guessing — fix the document and re-ingest |
+| a knowledge document is wrong or outdated | the bot escalates instead of guessing — fix the document and run `python tools/ingest.py --replace knowledge/<file>.md` |
 | a dead CRM endpoint | `Push to CRM` runs with `onError: continue`, so it can never break the ticket or the reply |
 
 Operational rules while the bot is in use:
@@ -180,8 +184,9 @@ Operational rules while the bot is in use:
 rag-support-bot/
 ├── site/            demo storefront (index.html) + embeddable chat widget (widget.js)
 ├── knowledge/       the "company documents" the bot is allowed to answer from
+├── tools/           ingest.py — loads knowledge/ into Supabase with a real source label
 ├── workflow/        design notes + exported n8n workflows
-│   ├── SupportBotRAG-full.json             website channel + KB ingestion (19 nodes)
+│   ├── SupportBotRAG-full.json             website channel + KB ingestion (20 nodes)
 │   ├── SupportBotEmailGmail-channel.json   Gmail channel, threaded replies (18 nodes)
 │   ├── SupportBotTelegram-channel.json     Telegram channel (13 nodes)
 │   ├── SupportBotErrorAlerts.json          Error Trigger → operator alert (3 nodes)

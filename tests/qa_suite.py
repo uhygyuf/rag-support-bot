@@ -130,7 +130,9 @@ def test_workflow(wf):
               isinstance(p.get("tableId"), str) and p.get("tableId") == "tickets",
               "tableId=%r" % (p.get("tableId"),))
         check("T4.5", "workflow", "Ticket insert targets the row/create operation",
-              p.get("resource") == "row" and p.get("operation") == "create")
+              p.get("resource", "row") == "row" and p.get("operation", "create") == "create",
+              "resource=%r operation=%r (omitted means the n8n default)"
+              % (p.get("resource"), p.get("operation")))
         check("T4.6", "workflow", "Ticket insert has the Supabase credential",
               bool(ins.get("credentials")))
     ntf = N.get("Notify Telegram")
@@ -139,7 +141,9 @@ def test_workflow(wf):
                                   "(onError=continue)",
               ntf.get("onError") == "continueRegularOutput", ntf.get("onError"))
         check("T4.8", "workflow", "Notification node is a Telegram sendMessage",
-              "telegram" in ntf["type"] and ntf["parameters"].get("operation") == "sendMessage")
+              "telegram" in ntf["type"]
+              and ntf["parameters"].get("operation", "sendMessage") == "sendMessage",
+              "operation=%r (the editor omits the default)" % ntf["parameters"].get("operation"))
     for nm, cid in (("Reply Escalated", "T4.9"), ("Reply Normal", "T4.10")):
         node = N.get(nm)
         check(cid, "workflow", "Chat reply node '%s' returns {output: ...}" % nm,
@@ -183,12 +187,18 @@ def test_workflow(wf):
         # --- greeting + quick-start options (ETS-Anita pattern)
         check("T6.5", "ux", "Chat trigger shows a welcome message on open",
               bool(p.get("initialMessages")), "initialMessages=%r" % p.get("initialMessages"))
-        prompts = (p.get("suggestedPrompts") or {}).get("prompts") or []
-        check("T6.6", "ux", "Chat trigger offers >= 4 quick-start options",
-              len(prompts) >= 4, "found %d" % len(prompts))
-        check("T6.7", "ux", "Assistant identity set (name/description/icon)",
-              bool(p.get("agentName") and p.get("agentDescription") and p.get("agentIcon")),
-              "name=%r" % p.get("agentName"))
+        # n8n 2.38.7 renders initialMessages and silently drops suggestedPrompts, agentName and
+        # agentIcon (verified against the served chat page), so the options a visitor can click
+        # live in site/widget.js. Asserting the trigger's own config would test a dead parameter:
+        # an earlier version of this suite did exactly that and passed while the hosted page
+        # showed no quick-start options at all.
+        html = read(os.path.join(ROOT, "site", "index.html"))
+        chats = re.findall(r'data-quick-replies="([^"]*)"', html)
+        chips = [c for c in (chats[0].split("|") if chats else []) if c.strip()]
+        check("T6.6", "ux", "Quick-start options reach the visitor (widget chips)",
+              len(chips) >= 4, "chips=%d" % len(chips))
+        check("T6.7", "ux", "Assistant identity shown by the widget",
+              "Harbor Support" in html, "brand string present in site/index.html")
 
     # --- resilience: transient failures must self-heal, not surface to the visitor
     retry_nodes = ["Support Agent", "Insert Ticket", "Notify Telegram", "Supabase Vector Store (Tool)",
@@ -473,6 +483,14 @@ def test_channels(channel_dir):
                                    "third-party URL with a token",
               "webhook.site" not in json.dumps(p.get("url", "")),
               json.dumps(p.get("url", ""))[:80])
+        # The live instance points this node at a personal webhook.site sink (a leftover from
+        # testing the CRM push). That URL must never reach the public repo: anyone could post to
+        # it, and a client would inherit a dependency on someone else's endpoint.
+        check("T22.6", "security", "No workflow file ships a live third-party endpoint",
+              not any("webhook.site" in read(os.path.join(ROOT, "workflow", f))
+                      for f in sorted(os.listdir(os.path.join(ROOT, "workflow")))
+                      if f.endswith(".json")),
+              "workflow/*.json scanned")
 
 
 def test_input_guard():
