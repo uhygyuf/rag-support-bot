@@ -53,7 +53,7 @@ def test_workflow(wf):
 
     def sub_children(parent):
         """n8n expresses an AI sub-node link from the CHILD to the PARENT:
-        {'Child': {'ai_languageModel': [[{'node': parent, ...}]]}} — so the
+        {'Child': {'ai_languageModel': [[{'node': parent, ...}]]}}, so the
         child shows up as the *source* key, not as a target."""
         out = []
         for src, ports in conns.items():
@@ -277,14 +277,23 @@ def test_site():
     check("T10.4", "integration", "Widget parses the n8n reply field 'output'",
           re.search(r"j\.output|\.output\b", js) is not None)
 
-    # --- embed URL must match the real chat endpoint of this workflow
-    m = re.search(r'data-webhook="([^"]+)"', html)
+    # --- embed URL must match the real chat endpoint of this workflow. The page may
+    # declare the webhook itself, or a local one and let the widget read site/backend.json.
+    m = re.search(r'data-(?:local-)?webhook="([^"]+)"', html)
     url = m.group(1) if m else ""
     check("T11.1", "integration", "index.html declares a widget webhook URL",
           bool(url), url)
     check("T11.2", "integration", "Embed URL uses the n8n chat endpoint "
                                   "shape /webhook/<id>/chat",
           bool(re.search(r"/webhook/[A-Za-z0-9_-]+/chat$", url)), url)
+    try:
+        hosted = json.loads(read(os.path.join(ROOT, "site", "backend.json")))
+    except (OSError, ValueError) as exc:
+        check("T11.3", "integration", "hosted backend.json is readable JSON", False, str(exc))
+    else:
+        hurl = hosted.get("webhook", "")
+        check("T11.3", "integration", "hosted backend.json points at a chat webhook",
+              bool(re.search(r"^https://[^/]+/webhook/[A-Za-z0-9_-]+/chat$", hurl)), hurl)
 
     # --- accessibility baseline (WCAG 2.1 AA)
     check("T12.1", "a11y", "Chat button has an accessible name (aria-label)",
@@ -342,7 +351,8 @@ def test_site():
 
 # ------------------------------------------------------------------ repo -----
 def test_repo():
-    secret_pat = re.compile(r"sk-[A-Za-z0-9]{16,}|sb_secret_|sbp_[A-Za-z0-9]{20,}"
+    secret_pat = re.compile(r"sk-[A-Za-z0-9]{16,}|sb_secret_[A-Za-z0-9_-]{20,}"
+                            r"|sbp_[A-Za-z0-9]{20,}"
                             r"|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\."
                             r"|AAAA[A-Za-z0-9_-]{20,}")
     offenders = []
@@ -432,7 +442,7 @@ def test_channels(channel_dir):
               bool(trig and trig["parameters"].get("postProcessAction") == "nothing"),
               "postProcessAction=%r" % (trig or {}).get("parameters", {}).get("postProcessAction"))
         check("T21.7", "safety", "Email channel: only answers mail to the dedicated "
-                                 "alias (+support) — never the whole inbox",
+                                 "alias (+support), never the whole inbox",
               "+support" in json.dumps(N.get("Is support mail?", {}).get("parameters", {})))
         check("T21.8", "channels", "Email channel: SMTP reply node wired + credential",
               bool(N.get("Send Email Reply")
@@ -627,7 +637,7 @@ def main():
     failed = [r for r in RESULTS if r["status"] == "FAIL"]
     width = max(len(r["desc"]) for r in RESULTS)
     print("=" * (width + 26))
-    print("QA SUITE — RAG support bot            %d checks, %d failed"
+    print("QA SUITE: RAG support bot             %d checks, %d failed"
           % (len(RESULTS), len(failed)))
     print("=" * (width + 26))
     for area in ("workflow", "channels", "integration", "safety", "security",

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render the demo video (customer-facing clip for the Fiverr gig):
+# Render the demo video (customer-facing clip of the product):
 #
 #   trim + crop ............ drops the browser tab strip + taskbar, and the first ~1s
 #                            which still showed an unrelated PDF viewer window

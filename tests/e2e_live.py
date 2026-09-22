@@ -71,7 +71,7 @@ def main():
     base = args.base
 
     print("=" * 74)
-    print("LIVE E2E — support bot @ %s" % base)
+    print("LIVE E2E: support bot @ %s" % base)
     print("=" * 74)
 
     # --- 1. happy path

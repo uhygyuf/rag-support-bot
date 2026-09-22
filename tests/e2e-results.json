@@ -2,37 +2,37 @@
  {
   "case": "happy_path_answer",
   "status": "PASS",
-  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping via USPS Priority. We roast and ship Tu",
-  "latency_s": 6.078298091888428,
+  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping (via USPS Priority). We roast and ship ",
+  "latency_s": 3.867100477218628,
   "extra": {
-   "answer": "US delivery takes 2–4 business days after shipping via USPS Priority. We roast and ship Tuesdays and Fridays. [faq.md]"
+   "answer": "US delivery takes 2–4 business days after shipping (via USPS Priority). We roast and ship on Tuesdays and Fridays; order before 9am on a roast day to ship same day. [faq.md]"
   }
  },
  {
   "case": "citation_present",
   "status": "PASS",
-  "detail": "(retry needed) We don't sell coffee machines or grinders. Our equipment lineup is a reusable st",
-  "latency_s": 3.2961363792419434,
+  "detail": "We don't sell machines or grinders — our equipment lineup is a reusable steel fi",
+  "latency_s": 1.1847760677337646,
   "extra": {
-   "answer": "We don't sell coffee machines or grinders. Our equipment lineup is a reusable steel filter for French press ($14) and a ceramic V60-style dripper ($26) — plus we grind beans to order. [catalogue.md]",
-   "retry_needed": true
+   "answer": "We don't sell machines or grinders — our equipment lineup is a reusable steel filter for French press ($14) and a ceramic V60-style dripper ($26). [catalogue.md]",
+   "retry_needed": false
   }
  },
  {
   "case": "memory_followup",
   "status": "PASS",
-  "detail": "follow-up -> 7–14 business days to Canada (international shipping). [faq.md]",
-  "latency_s": 1.1340258121490479,
+  "detail": "follow-up -> Shipments to Canada take 7–14 business days. We roast and ship on Tuesdays and Fridays, so",
+  "latency_s": 1.0486507415771484,
   "extra": {
-   "first": "Yes! We ship to Canada — delivery takes 7–14 business days. Customs duties are paid by the customer. [faq.md]",
-   "second": "7–14 business days to Canada (international shipping). [faq.md]"
+   "first": "Yes! We ship to Canada — international delivery takes 7–14 business days, and any customs duties are paid by the customer. [faq.md]",
+   "second": "Shipments to Canada take 7–14 business days. We roast and ship on Tuesdays and Fridays, so orders placed before 9am on a roast day go out the same day. [faq.md]"
   }
  },
  {
   "case": "escalation_reply",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 7.703542232513428,
+  "latency_s": 6.872351408004761,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -41,7 +41,7 @@
   "case": "injection_refused",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 4.474165916442871,
+  "latency_s": 4.610306262969971,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -50,35 +50,28 @@
   "case": "malformed_body_survives",
   "status": "PASS",
   "detail": "HTTP 200 | {\"output\":\"I didn't catch that — could you please retype your question",
-  "latency_s": 0.08003592491149902,
+  "latency_s": 0.09617018699645996,
   "extra": {}
  },
  {
   "case": "empty_input_survives",
   "status": "PASS",
   "detail": "HTTP 200 | I didn't catch that — could you please retype your question? I can hel",
-  "latency_s": 0.08203506469726562,
+  "latency_s": 0.09497714042663574,
   "extra": {}
  },
  {
   "case": "long_input_survives",
   "status": "PASS",
-  "detail": "HTTP 200, 2160 chars in, 109 chars out",
-  "latency_s": 4.362077236175537,
+  "detail": "HTTP 200, 2160 chars in, 290 chars out",
+  "latency_s": 3.6645655632019043,
   "extra": {}
  },
  {
   "case": "concurrent_3_visitors",
   "status": "PASS",
   "detail": "3/3 ok, wall 3.7s, max 3.7s",
-  "latency_s": 3.6587088108062744,
-  "extra": {}
- },
- {
-  "case": "public_tunnel_reachable",
-  "status": "PASS",
-  "detail": "HTTP 200 via https://jail-identifying-letting-routine.trycloudflare.com",
-  "latency_s": 4.398512363433838,
+  "latency_s": 3.687997341156006,
   "extra": {}
  }
 ]

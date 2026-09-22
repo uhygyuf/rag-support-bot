@@ -1,4 +1,5 @@
 /* Chat widget for the RAG support bot (n8n Chat Trigger).
+
    Usage:
      <script src="widget.js"
              data-local-webhook="http://127.0.0.1:5678/webhook/<id>/chat"
@@ -7,11 +8,11 @@
              data-welcome="Hi! ..."
              data-quick-replies="Question one|Question two|..."></script>
 
-   Where the backend lives (first match wins):
-     1. data-webhook on the tag — explicit
-     2. backend.json fetched next to the page — used by the hosted copy, holds the live
-        tunnel URL and is refreshed when the tunnel restarts
-     3. data-local-webhook — only when the page is opened from disk (file://)
+   Backend address, first match wins:
+     1. data-webhook on the tag
+     2. backend.json next to the page (used by the hosted copy; refreshed when the tunnel
+        restarts)
+     3. data-local-webhook, only for a page opened from disk (file://)
 
    Talks to n8n with the chat protocol {action:'sendMessage', sessionId, chatInput}
    and renders the reply field {output}. */
@@ -33,18 +34,14 @@
     'How long does US shipping take?|Do you ship to Canada?|How much is the Ethiopia Guji?|' +
     'Can I pause my subscription?|Do you offer wholesale pricing?|I want to talk to a human').split('|');
   var OFFLINE = attr('data-offline',
-    'Sorry — our assistant is offline right now. Please email us and a human will reply as soon as we can.');
+    'Sorry, our assistant is offline right now. Please email us and a human will reply as soon as we can.');
   var TIMEOUT_MS = parseInt(attr('data-timeout-ms', '45000'), 10) || 45000;
 
   var sessionId = 's-' + Math.random().toString(36).slice(2, 10);
 
-  /* ---------- where is the backend? ----------
-     1. data-webhook on the script tag (explicit, wins)
-     2. backend.json next to the page (what a hosted copy uses — the live tunnel URL,
-        refreshed when the tunnel restarts)
-     3. data-local-webhook, but only for a page opened straight from disk (file://)
-     If nothing is reachable the widget keeps working visually and answers with the
-     offline line, never an HTTP code. */
+  /* Resolve the backend address. data-webhook wins, then backend.json (the hosted copy),
+     then data-local-webhook for a page opened from disk. If none of them answers, the
+     visitor still gets the offline line and never an HTTP code. */
   var ready = (function () {
     if (EXPLICIT) { return Promise.resolve(EXPLICIT); }
     if (location.protocol === 'file:') { return Promise.resolve(LOCAL); }
@@ -54,7 +51,7 @@
       .catch(function () { return LOCAL; });
   })();
 
-  /* ---------- styles ---------- */
+  /* styles */
   var css = document.createElement('style');
   css.textContent = [
     '#rgw-btn{position:fixed;right:22px;bottom:22px;z-index:99999;border:0;border-radius:26px;',
@@ -89,11 +86,11 @@
   ].join('');
   document.head.appendChild(css);
 
-  /* ---------- markup ---------- */
+  /* markup */
   var btn = document.createElement('button');
   btn.id = 'rgw-btn'; btn.type = 'button';
   btn.innerHTML = '<span aria-hidden="true">💬</span><span id="rgw-btn-label"></span>';
-  btn.setAttribute('aria-label', CTA + ' — open ' + TITLE + ' chat');
+  btn.setAttribute('aria-label', 'Open the ' + TITLE + ' chat');
   document.body.appendChild(btn);
   btn.querySelector('#rgw-btn-label').textContent = CTA;
 
@@ -163,7 +160,7 @@
     if (e.key === 'Escape' && panel.classList.contains('open')) { closePanel(); }
   });
 
-  /* ---------- send ---------- */
+  /* send */
   function send(text) {
     var q = String(text == null ? input.value : text).trim();
     if (!q) { return; }
@@ -202,7 +199,7 @@
     send(input.value);
   });
 
-  /* ---------- first paint ---------- */
+  /* first paint */
   add(WELCOME, 'bot');
   renderChips();
   if (!window.sessionStorage || !sessionStorage.getItem('rgw-teaser-shown')) {

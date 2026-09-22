@@ -1,4 +1,4 @@
-# publish-backend-url.ps1 — point the hosted demo page at the backend n8n is reachable at right now.
+# publish-backend-url.ps1: point the hosted demo page at the backend n8n is reachable at right now.
 #
 # The quick tunnel gets a new hostname every time it restarts, so the hosted copy of the demo
 # site (GitHub Pages) needs to be told the current address. This script:

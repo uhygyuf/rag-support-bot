@@ -441,6 +441,13 @@
   "detail": "http://127.0.0.1:5678/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
  },
  {
+  "id": "T11.3",
+  "area": "integration",
+  "desc": "hosted backend.json points at a chat webhook",
+  "status": "PASS",
+  "detail": "https://factory-control-smooth-canvas.trycloudflare.com/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
+ },
+ {
   "id": "T12.1",
   "area": "a11y",
   "desc": "Chat button has an accessible name (aria-label)",
@@ -660,7 +667,7 @@
  {
   "id": "T21.7",
   "area": "safety",
-  "desc": "Email channel: only answers mail to the dedicated alias (+support) — never the whole inbox",
+  "desc": "Email channel: only answers mail to the dedicated alias (+support), never the whole inbox",
   "status": "PASS",
   "detail": ""
  },
