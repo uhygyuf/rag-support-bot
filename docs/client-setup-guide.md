@@ -11,8 +11,9 @@ yours. No service of ours is in the path, and nothing is billed through us.
 
 | File | What it is |
 |---|---|
-| `SupportBotRAG-full.json` | the main workflow: upload documents + the chat bot |
+| `SupportBotRAG-full.json` | the main workflow: document loading + the chat bot + the escalation branch (20 nodes) |
 | `CreateSupportTicket-tool.json` | the small workflow that writes a ticket when the bot cannot answer |
+| `tools/ingest.py` | the loader you use to add documents (see step 6) |
 | `knowledge/` (optional) | the demo knowledge base used in the demo video — replace with your own |
 | `setup-guide.md` | this file |
 | `acceptance-checklist.md` | the 8 tests that decide whether the delivery is complete |
@@ -103,7 +104,8 @@ Top up a small balance (¥20–50 lasts thousands of questions).
 1. Open your n8n → **Overview** → **Create workflow** → top-right **⋯** → **Import from File** →
    select `SupportBotRAG-full.json`.
 2. Repeat for `CreateSupportTicket-tool.json`.
-3. Open the main workflow. You should see 11 nodes in two groups (documents + chat).
+3. Open the main workflow. You should see 20 nodes in three groups: documents, chat, and the
+   escalation branch (ticket → notification → CRM → reply).
 
 ---
 
@@ -132,16 +134,32 @@ Also open the ticket workflow and attach `Supabase account` to its one Supabase 
 
 ## 6. Load your documents
 
-1. In the main workflow, open `On form submission` → **Execute step** → the test form opens in a new tab.
-2. Upload one document (`.md`, `.txt` or `.pdf`) and submit. The nodes turn green and you get
-   "Form Submitted".
-3. Verify: Supabase → **Table Editor** → `documents` → you should see several new rows.
-4. Repeat for every document you want the bot to know. Keep documents factual and up to date —
-   the bot's answers can only be as good as these files.
+**Use the loader script.** It is the only path that labels every chunk with the file it came from, so
+the bot can show you where an answer came from.
 
-> **Replacing a document later:** upload the new version, then delete the rows of the old version in
-> Supabase (Table Editor → filter by the `source` in the `metadata` column → delete). Otherwise both
-> versions stay in the database and the bot may quote the old one.
+```bash
+python tools/ingest.py --dry-run                  # shows the chunk plan, sends nothing
+python tools/ingest.py --replace                  # every knowledge/*.md, replacing old rows
+python tools/ingest.py --replace knowledge/faq.md # a single file
+```
+
+The script needs a small JSON file of your own credentials (keep it outside any repository):
+
+```json
+{ "supabaseUrl": "https://<project>.supabase.co", "serviceKey": "<service_role key>",
+  "siliconflowUrl": "https://api.siliconflow.cn/v1", "siliconflowKey": "<key>" }
+```
+
+Pass its path with `--secrets <file>` or set `INGEST_SECRETS`. Then verify: Supabase →
+**Table Editor** → `documents` → each row's `metadata.source` must be your real file name.
+
+> **Why not the upload form?** The `On form submission` trigger is kept for experiments, but n8n 2.38.7's
+> binary loader hard-codes `metadata.source = "blob"` and the node has no metadata field, so documents
+> loaded that way produce answers that cannot name a source. The loader writes the real name; the form
+> cannot.
+
+> **Replacing a document later:** edit the file and run `python tools/ingest.py --replace` — it deletes
+> the previous rows of that file first, so the bot cannot quote the old version.
 
 ---
 
@@ -201,10 +219,11 @@ channel (email / Telegram) if you ordered one.
 | Symptom | Cause | Fix |
 |---|---|---|
 | `401` / `Authentication failed` | wrong or missing key | re-copy the key; check the base URL for SiliconFlow (`/v1` at the end) |
-| Bot answers "I don't have that information" for something you know is in your docs | the document was never ingested, or the question is worded very differently | check row count in `documents`; re-upload; make the wording in the doc closer to how customers ask |
+| Bot answers "I don't have that information" for something you know is in your docs | the document was never loaded, or the question is worded very differently | run `python tools/ingest.py --dry-run` and compare with the `documents` table; re-run `--replace`; make the wording in the doc closer to how customers ask |
+| An answer ends with `[blob]` instead of a file name | the document was loaded through the upload form, which cannot label chunks | run `python tools/ingest.py --replace` for that file |
 | The chat window does not answer on your site | workflow not published, or wrong webhook URL | publish it; copy the Chat URL again |
 | `relation "documents" does not exist` | the SQL in step 2 was not run in the right project | run it in the SQL Editor of the project whose URL you pasted |
-| Answers quote an outdated fact | old document version still in the database | delete the old rows (see step 6) |
+| Answers quote an outdated fact | old document version still in the database | run `python tools/ingest.py --replace` for that file (it removes the old rows first) |
 | `reasoning_content` / bad-request errors from the model | an OpenAI-format model node was used with a DeepSeek reasoning model | use the `DeepSeek Chat Model` node as delivered |
 
 ---
