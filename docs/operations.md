@@ -182,7 +182,9 @@ Credentials come from a local JSON file (`D:\Tools\n8n\demo-secrets.json`, `--se
 elsewhere) with four fields: `supabaseUrl`, `serviceKey`, `siliconflowUrl`, `siliconflowKey`. Keep it
 outside the repository. Two header traps are handled inside the script: Supabase wants the service key
 in **both** the `apikey` and the `Authorization` header (a bearer-only request is answered 401 "No API
-key found in request"), and the embedding endpoint rejects requests without a normal `User-Agent`.
+key found in request"), and the embedding call needs its own headers: reusing the Supabase header
+builder (which sends the service key as the bearer token) against the embedding endpoint is answered
+`401` with no explanation, which is exactly what a careless refactor produces.
 
 **The workflow's upload form cannot label chunks.** n8n 2.38.7's binary data loader hardcodes
 `metadata.source = "blob"` for binary input, and version 1.1 of that node has no metadata parameter
