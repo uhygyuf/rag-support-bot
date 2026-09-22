@@ -272,3 +272,68 @@ the documentation came from pass 1's fixes and are recorded in pass 1's section 
 | Operational documentation exists | PASS — `docs/operations.md` (incl. 3.4 on ingestion), `docs/client-setup-guide.md`, `docs/acceptance-checklist.md` |
 | Remaining P2/P3 risks documented with impact | PASS — sections D and F |
 | Conditions for wider sharing stated | PASS — section A (three conditions) |
+
+---
+
+## I. Third pass (same day): the start/stop switches
+
+Requested: one folder with two switches — start, and really stop — tested, then published.
+
+**Delivered:** `switches/bot-on.bat`, `switches/bot-off.bat`, `switches/bot-status.bat`, the shared
+`switches/switch-bot.ps1` and `switches/README.md`. The switches read the tunnel executable, its
+arguments and the log path from `watchdog-config.json`, so there is one place to change them.
+
+**Why "stop" is not just stopping n8n:** the scheduled task `n8n watchdog` restarts the service within
+about five minutes whenever it is missing (that is the self-healing the demo depends on), so
+`bot-off.bat` disables the task **first**, then stops n8n and the tunnel, then verifies both.
+
+### How the switches were tested (all commands executed in this session)
+
+| # | Action | Result |
+|---|---|---|
+| 1 | `switch-bot.ps1 -Action status` (read-only) | reported: both tasks `Ready`, n8n answering, tunnel online, published page `points at the live tunnel` |
+| 2 | `bot-off.bat` (through the real double-click path, `cmd /c`) | `n8n watchdog: disabled`, `n8n zombie cleanup: disabled`, stopped `node` pid 51152 + the leftover `cmd.exe` + `cloudflared` pid 22780, then verified "n8n is stopped" / "the tunnel is stopped" |
+| 3 | independent check of the off state | `healthz` `000`, listeners on 5678 `0`, `cloudflared` processes `0`, both tasks `Disabled`, published page still `200` |
+| 4 | `bot-off.bat` a second time | idempotent: "nothing was listening on port 5678", "no tunnel process was running" |
+| 5 | `bot-on.bat` (from a fully stopped state) | enabled both tasks, started n8n, and **found the defect below** |
+| 6 | `bot-on.bat` again (after the fix) | replaced the unresponsive tunnel with `apparatus-sign-tips-evaluating…`, restarted n8n with the new address, waited for the tunnel, published `backend.json` with a live check (`live check: OK - US delivery takes 2–4 business days … [faq.md]`), pushed `de24df5` |
+| 7 | independent check through the published page | `backend.json` on Pages equals the live tunnel, and a question sent to that address answers: `Yes! We ship to Canada — 7–14 business days … [faq.md]` |
+| 8 | `bot-on.bat` again while healthy | "already points at the live tunnel"; **no new commit** (`HEAD` unchanged) — the switch does not publish in a loop |
+| 9 | `python tests/e2e_live.py --tunnel <current>` after the tunnel swap | `ALL PASS (11/11)` — the restart did not break anything |
+| 10 | `python tests/qa_suite.py` | `138 checks, 0 failed` (7 new switch checks, `T28.1`–`T28.7`) |
+
+### BUG-13 — P2 — after a full stop, starting again could leave the published page pointing at a dead tunnel
+
+- **Reproduction:** stop everything with `bot-off.bat` (which also kills the tunnel), then start again
+  with the first version of `bot-on.bat`.
+- **Actual:** n8n came up and answered locally, and a new tunnel was created, but that tunnel did not
+  answer at the edge (`curl <new tunnel>/healthz` → `000`, ~8 minutes later still `000`). The watchdog
+  therefore refused to publish it:
+  `20:14:57  hook exited 1 for https://fast-comments-novelty-commercial… - will retry next scan`, and
+  then waited out its restart cooldown: `20:15:04  tunnel unreachable but a restart happened recently -
+  waiting` (cooldown is `minMinutesBetweenRestarts = 8`). The published `backend.json` still pointed at
+  the previous, now-dead host, so a visitor would have seen the offline sentence — while the first
+  version of the switch printed "the bot now answers".
+- **Expected:** the start switch either leaves the published page working, or says plainly that it does
+  not.
+- **Root cause:** two independent gaps. The switch trusted the watchdog's publish attempt without
+  checking the outcome, and neither component replaced a tunnel that was created but never became
+  reachable (the watchdog only restarts a tunnel it considers missing or unreachable **after** its
+  cooldown).
+- **Fix:** the switch now (a) waits 30 s on a tunnel that does not answer, (b) replaces it if it still
+  does not answer, restarting n8n with the new address so webhook registration matches,
+  (c) waits until the tunnel actually answers before publishing, (d) publishes through the tested
+  `demo/publish-backend-url.ps1` (which asks the bot a question first), and (e) prints
+  "NOT fully up" with the next steps instead of claiming success. `T28.5`/`T28.6` now fail if that
+  verification or the republish step disappears.
+- **Re-tested:** rows 6-9 above, including the idempotency run and the full public-origin E2E suite.
+- **Note for the future:** the watchdog's cooldown means a tunnel that dies right after a repair can
+  leave the demo offline for up to 8 minutes. The switch's explicit tunnel test is what closes that
+  window; the watchdog alone does not.
+
+### Not covered in this pass
+
+The switches were exercised on this machine only, with this installation's task names and paths. A
+machine where the scheduled tasks are named differently (or absent) reports
+"task not found … (not part of this install)" and continues, but that branch was not run. The
+`bot-status.bat` window was driven through `cmd /c`, not by an actual double-click.

@@ -96,7 +96,7 @@ the assistant is offline — the storefront itself never breaks.
 
 | Suite | What it covers | Last run |
 |---|---|---|
-| `tests/qa_suite.py` | **131 static + contract checks** (workflow shape 29, channels 23, reliability 17, UX 10, a11y 10, integration 10, safety 9, content 8, release 5, docs 4, security 4, quality 2) — no network, no writes | 131 / 131 PASS |
+| `tests/qa_suite.py` | **138 static + contract checks** (workflow shape 29, channels 23, reliability 18, UX 10, a11y 10, integration 10, safety 10, content 8, release 9, docs 5, security 4, quality 2) — no network, no writes | 138 / 138 PASS |
 | `tests/widget_dom_test.js` | 10 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n), its offline behaviour and its refusal to render an answer as HTML, in a stubbed DOM | 10 / 10 PASS |
 | `tests/test_ingest.py` | 13 offline cases for the loader: chunk boundaries, an oversized block, CRLF, a whitespace-only file, and the rule that the two APIs never share headers | 13 / 13 PASS |
 | `tests/kb_live_check.py` | reads the live knowledge base and compares it with `knowledge/`: every chunk names a file, every file is loaded, no stray source, chunk counts match the plan (needs credentials; skipped without them) | 5 / 5 PASS |
@@ -144,11 +144,15 @@ Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.
 
 | I want to… | Do this |
 |---|---|
-| Start everything (n8n + demo page) | double-click `start-demo.bat` — starts n8n if needed, waits ~30 s, opens the demo site |
-| Start only n8n | `D:\Tools\n8n\n8n-serve.bat` (keep the "n8n server" window open) |
+| **Start the bot** (service + tunnel + page address) | double-click **`switches\bot-on.bat`** — verifies the service and the tunnel and republishes the address if the tunnel changed |
+| **Really stop it** | double-click **`switches\bot-off.bat`** — disables the self-healing task first, then stops n8n and the tunnel. Stopping n8n alone is not enough: the task restarts it within ~5 minutes |
+| Check the state without changing anything | `switches\bot-status.bat` |
+| Start everything and open the demo page (clears QA tickets) | double-click `start-demo.bat` (add `-KeepTickets` to keep them) |
+| Start only n8n, no public access | `D:\Tools\n8n\start-n8n.bat` (keep the "n8n server" window open) |
 | Open the bot editor | browser → `http://127.0.0.1:5678` → workflow **Support Bot (RAG) — full** |
-| Stop n8n | close the "n8n server" window, or `D:\Tools\n8n\stop-n8n.bat` |
-| Check whether n8n is up | `curl -s -o NUL -w "%{http_code}" http://127.0.0.1:5678/home` → `200` = up, `000` = down (20–60 s to boot) |
+| Check whether n8n is up | `curl -s -o NUL -w "%{http_code}" http://127.0.0.1:5678/healthz` → `200` = up, `000` = down (20–60 s to boot) |
+
+Details, and what a visitor sees in each state: `switches/README.md`.
 
 ## Operations
 
@@ -195,6 +199,7 @@ rag-support-bot/
 │   ├── SupportBotEmail-channel.json        earlier IMAP-based email channel (retired)
 │   └── CreateSupportTicket-tool.json       earlier tool-based ticket node (kept for reference)
 ├── tests/           static QA suite + live E2E suite (+ JSON results)
+├── switches/        bot-on.bat / bot-off.bat / bot-status.bat — start and really stop the bot
 ├── demo/            one-command demo launcher (demo-start.ps1) + the subtitle/render pipeline used
 │                    for the 60-second walkthrough video
 └── docs/            operations, setup guide, QA reports, acceptance checklist

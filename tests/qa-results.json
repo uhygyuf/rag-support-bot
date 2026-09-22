@@ -445,7 +445,7 @@
   "area": "integration",
   "desc": "hosted backend.json points at a chat webhook",
   "status": "PASS",
-  "detail": "https://location-progress-finance-luck.trycloudflare.com/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
+  "detail": "https://apparatus-sign-tips-evaluating.trycloudflare.com/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
  },
  {
   "id": "T12.1",
@@ -882,6 +882,55 @@
   "detail": ""
  },
  {
+  "id": "T28.1",
+  "area": "release",
+  "desc": "Both switches and their script are shipped",
+  "status": "PASS",
+  "detail": "missing=[]"
+ },
+ {
+  "id": "T28.2",
+  "area": "release",
+  "desc": "Each launcher calls the switch script with its own action",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.3",
+  "area": "reliability",
+  "desc": "Stopping disables the self-healing task first, so the bot cannot come back on its own",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.4",
+  "area": "safety",
+  "desc": "The switches never read credentials or touch the database",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.5",
+  "area": "release",
+  "desc": "Starting verifies the tunnel answers before it claims success",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.6",
+  "area": "release",
+  "desc": "The published address is refreshed when the tunnel changes",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.7",
+  "area": "docs",
+  "desc": "The README points at the switches",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T14.1",
   "area": "security",
   "desc": "No secrets committed in the project tree",
@@ -912,8 +961,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (131)",
+  "desc": "README states the real number of checks (138)",
   "status": "PASS",
-  "detail": "README says 131"
+  "detail": "README says 138"
  }
 ]

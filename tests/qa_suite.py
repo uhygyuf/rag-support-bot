@@ -646,6 +646,44 @@ def test_code_node_syntax(workflow_dir):
           err is None, err or "")
 
 
+def test_switches():
+    """The start/stop switches (switches/).
+
+    Two properties matter more than the scripts existing: stopping must disable the self-healing
+    task (otherwise n8n is back within five minutes and "off" is a lie), and neither switch may
+    touch data or credentials (switching the bot off must never delete anything).
+    """
+    on_bat = os.path.join(ROOT, "switches", "bot-on.bat")
+    off_bat = os.path.join(ROOT, "switches", "bot-off.bat")
+    ps1 = os.path.join(ROOT, "switches", "switch-bot.ps1")
+
+    check("T28.1", "release", "Both switches and their script are shipped",
+          all(os.path.exists(p) for p in (on_bat, off_bat, ps1)),
+          "missing=%s" % [os.path.basename(p) for p in (on_bat, off_bat, ps1)
+                          if not os.path.exists(p)])
+
+    if not os.path.exists(ps1):
+        return
+    ps = read(ps1)
+    check("T28.2", "release", "Each launcher calls the switch script with its own action",
+          "-Action on" in read(on_bat) and "-Action off" in read(off_bat))
+    check("T28.3", "reliability", "Stopping disables the self-healing task first, so the bot "
+                                  "cannot come back on its own",
+          "schtasks.exe /change" in ps and "'/disable'" in ps
+          and "n8n watchdog" in ps and "n8n zombie cleanup" in ps)
+    check("T28.4", "safety", "The switches never read credentials or touch the database",
+          "demo-secrets" not in ps and "rest/v1" not in ps and "DELETE" not in ps.replace(
+              "Stop-Process", ""))
+    check("T28.5", "release", "Starting verifies the tunnel answers before it claims success",
+          "function Wait-Tunnel" in ps and "function Test-Tunnel" in ps
+          and "NOT fully up" in ps)
+    check("T28.6", "release", "The published address is refreshed when the tunnel changes",
+          "publish-backend-url.ps1" in ps and "Publish-Backend" in ps)
+    check("T28.7", "docs", "The README points at the switches",
+          any(s in read(os.path.join(ROOT, "README.md"))
+              for s in ("switches/bot-on.bat", "switches\\bot-on.bat")))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workflow", default=os.path.join(
@@ -668,6 +706,7 @@ def main():
     test_input_guard()
     test_error_alerts(os.path.join(ROOT, "workflow"))
     test_code_node_syntax(os.path.join(ROOT, "workflow"))
+    test_switches()
     test_repo()
 
     # The README quotes how many checks this suite runs. Assert it instead of trusting it:
