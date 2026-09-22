@@ -11,6 +11,19 @@ threaded reply) · Telegram.
 The demo business is a fictional coffee roaster (Harbor Coffee Roasters); its FAQ, catalogue and
 policies in `knowledge/` are the only facts the bot is allowed to use.
 
+## Live demo
+
+| Where | How to reach it |
+|---|---|
+| **Web** | **https://uhygyuf.github.io/rag-support-bot/** — the storefront with the assistant in the corner. Ask something the FAQ does not cover and you get the handoff to a human instead of a guess. |
+| Email | write to the demo mailbox's `+support` alias — the bot answers inside the customer's thread |
+| Telegram | `@HarborSupport_bot` |
+
+The hosted page finds its backend at runtime through `site/backend.json`, which holds the current
+tunnel address; refresh it with `demo/publish-backend-url.ps1` (it refuses to publish an address that
+does not answer). While the machine that runs n8n is off, the page still loads and the widget says
+the assistant is offline — the storefront itself never breaks.
+
 ---
 
 ## What the product does

@@ -87,6 +87,7 @@ seconds. Keep it inactive except when testing.
 | Channel | Entry point | State |
 |---|---|---|
 | Website widget | `site/index.html` → chat webhook | production-ready |
+| Website (hosted copy) | **https://uhygyuf.github.io/rag-support-bot/** → backend from `site/backend.json` | live while the tunnel is up (section 3.2) |
 | Telegram | `@HarborSupport_bot` → Telegram trigger | works, **requires the public mode** (section 1) |
 | Email | Gmail API (`+support` alias) → threaded reply | production-ready (verified end-to-end 2026-09-19) |
 
@@ -112,6 +113,25 @@ Behaviour worth knowing (both are intentional, not bugs):
   old mail you already sent will not be answered twice — that is the anti-duplicate mechanism.
 - The trigger only looks at **unread** mail and the workflow marks handled mail as read afterwards,
   so opening a customer mail by hand *before* the poll can skip it.
+
+### 3.2 Hosting the demo page (GitHub Pages)
+
+`site/` is published to **https://uhygyuf.github.io/rag-support-bot/** by
+`.github/workflows/pages.yml` on every push that touches `site/` (manual run: *Actions → Deploy demo
+site to GitHub Pages → Run workflow*).
+
+The page no longer hardcodes a backend. `site/widget.js` resolves its target in this order:
+
+1. `data-webhook` on the script tag — explicit, wins over everything;
+2. `site/backend.json` — the live tunnel address sitting next to the page (what the hosted copy uses);
+3. `data-local-webhook` — only for a page opened straight from disk (`file://`).
+
+Quick-tunnel hostnames change on every restart, so `backend.json` has to be refreshed afterwards:
+double-click `demo\publish-backend-url.bat` (or run the `.ps1`). The script reads the watchdog's
+`public-url.txt`, asks the bot a real question to prove the address answers, then commits and pushes
+`site/backend.json`; Pages redeploys by itself. Switches: `-NoPush` (write the file only) and
+`-SkipCheck` (publish without the live answer). While the machine is off the page still loads — the
+widget answers with its offline line instead of hanging.
 
 ---
 
