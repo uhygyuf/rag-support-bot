@@ -1,11 +1,17 @@
 /* Chat widget for the RAG support bot (n8n Chat Trigger).
    Usage:
      <script src="widget.js"
-             data-webhook="http://127.0.0.1:5678/webhook/<id>/chat"
+             data-local-webhook="http://127.0.0.1:5678/webhook/<id>/chat"
              data-title="Harbor Support"
              data-cta="Need coffee help?"
              data-welcome="Hi! ..."
              data-quick-replies="Question one|Question two|..."></script>
+
+   Where the backend lives (first match wins):
+     1. data-webhook on the tag — explicit
+     2. backend.json fetched next to the page — used by the hosted copy, holds the live
+        tunnel URL and is refreshed when the tunnel restarts
+     3. data-local-webhook — only when the page is opened from disk (file://)
 
    Talks to n8n with the chat protocol {action:'sendMessage', sessionId, chatInput}
    and renders the reply field {output}. */
@@ -17,7 +23,8 @@
     return (v && v.length) ? v : fallback;
   }
 
-  var WEBHOOK = attr('data-webhook', 'http://127.0.0.1:5678/webhook/chat');
+  var EXPLICIT = attr('data-webhook', '');
+  var LOCAL    = attr('data-local-webhook', 'http://127.0.0.1:5678/webhook/chat');
   var TITLE   = attr('data-title', 'Support');
   var CTA     = attr('data-cta', 'Need help?');
   var WELCOME = attr('data-welcome',
@@ -30,6 +37,22 @@
   var TIMEOUT_MS = parseInt(attr('data-timeout-ms', '45000'), 10) || 45000;
 
   var sessionId = 's-' + Math.random().toString(36).slice(2, 10);
+
+  /* ---------- where is the backend? ----------
+     1. data-webhook on the script tag (explicit, wins)
+     2. backend.json next to the page (what a hosted copy uses — the live tunnel URL,
+        refreshed when the tunnel restarts)
+     3. data-local-webhook, but only for a page opened straight from disk (file://)
+     If nothing is reachable the widget keeps working visually and answers with the
+     offline line, never an HTTP code. */
+  var ready = (function () {
+    if (EXPLICIT) { return Promise.resolve(EXPLICIT); }
+    if (location.protocol === 'file:') { return Promise.resolve(LOCAL); }
+    return fetch('backend.json', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { return (j && j.webhook) ? j.webhook : LOCAL; })
+      .catch(function () { return LOCAL; });
+  })();
 
   /* ---------- styles ---------- */
   var css = document.createElement('style');
@@ -152,11 +175,13 @@
     var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS) : null;
 
-    fetch(WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sendMessage', sessionId: sessionId, chatInput: q }),
-      signal: ctrl ? ctrl.signal : undefined
+    ready.then(function (url) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'sendMessage', sessionId: sessionId, chatInput: q }),
+        signal: ctrl ? ctrl.signal : undefined
+      });
     }).then(function (r) {
       if (!r.ok) { throw new Error('HTTP ' + r.status); }
       return r.text();
