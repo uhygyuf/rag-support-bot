@@ -31,3 +31,11 @@ demo/video/fin/
 demo/video/ocr*.txt
 demo/video/scene_scores.txt
 demo/video/list.txt
+
+# local scratch used while preparing demo artwork (kept on disk, not in the repo)
+demo/gen_*.py
+demo/make_*.py
+demo/compose_*.py
+demo/refine_*.py
+demo/fetch_*.py
+demo/video/_*.png
