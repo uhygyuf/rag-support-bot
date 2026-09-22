@@ -571,6 +571,28 @@ def test_gmail_channel(workflow_dir):
           and "Prep Email Question" in str(send["parameters"].get("messageId")))
 
 
+def _js_syntax_error(js):
+    """Parse JavaScript with the real parser. Returns None when it parses.
+
+    The project ships JavaScript in two places that must not break silently: the Code
+    nodes inside workflow JSON and the widget every visitor downloads. A structural
+    check cannot see a broken string literal, only a parser can.
+    """
+    import subprocess
+    import tempfile
+    tmp = os.path.join(tempfile.gettempdir(), "js_syntax_check.js")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(js)
+    try:
+        r = subprocess.run(["node", "--check", tmp], capture_output=True, timeout=30)
+    except Exception as exc:  # noqa: BLE001
+        return "node could not be run: %s" % exc
+    if r.returncode == 0:
+        return None
+    err = (r.stderr or b"").decode("utf-8", "replace").strip().splitlines()
+    return err[-1] if err else "node --check failed"
+
+
 def test_code_node_syntax(workflow_dir):
     """Every Code node's jsCode must be valid JavaScript.
 
@@ -578,8 +600,6 @@ def test_code_node_syntax(workflow_dir):
     a JSON round-trip (the string literal received a raw newline) and the node
     only failed at runtime.
     """
-    import subprocess
-    import tempfile
     files = [f for f in os.listdir(workflow_dir) if f.endswith(".json")]
     checked = 0
     bad = []
@@ -595,19 +615,17 @@ def test_code_node_syntax(workflow_dir):
             if not js:
                 continue
             checked += 1
-            tmp = os.path.join(tempfile.gettempdir(), "n8n_code_check.js")
-            with open(tmp, "w", encoding="utf-8") as fh:
-                fh.write(js)
-            try:
-                r = subprocess.run(["node", "--check", tmp], capture_output=True,
-                                   timeout=30)
-                if r.returncode != 0:
-                    bad.append("%s/%s" % (fname, n["name"]))
-            except Exception as exc:  # noqa: BLE001
-                bad.append("%s/%s (%s)" % (fname, n["name"], exc))
+            err = _js_syntax_error(js)
+            if err:
+                bad.append("%s/%s: %s" % (fname, n["name"], err))
     check("T23.1", "quality", "All %d Code nodes in shipped workflows parse as "
                               "valid JavaScript" % checked,
           not bad, str(bad))
+
+    widget = os.path.join(ROOT, "site", "widget.js")
+    err = _js_syntax_error(read(widget)) if os.path.exists(widget) else "file missing"
+    check("T23.2", "quality", "The shipped chat widget parses as valid JavaScript",
+          err is None, err or "")
 
 
 def main():
@@ -633,6 +651,17 @@ def main():
     test_error_alerts(os.path.join(ROOT, "workflow"))
     test_code_node_syntax(os.path.join(ROOT, "workflow"))
     test_repo()
+
+    # The README quotes how many checks this suite runs. Assert it instead of trusting it:
+    # a stale number in the documentation is exactly the kind of drift this suite exists for.
+    declared = -1
+    m = re.search(r"\*\*(\d+) static \+ contract checks\*\*",
+                  read(os.path.join(ROOT, "README.md")))
+    if m:
+        declared = int(m.group(1))
+    total = len(RESULTS) + 1  # +1 for the check added on this line
+    check("T15.4", "docs", "README states the real number of checks (%d)" % total,
+          declared == total, "README says %s" % (declared if declared >= 0 else "nothing"))
 
     failed = [r for r in RESULTS if r["status"] == "FAIL"]
     width = max(len(r["desc"]) for r in RESULTS)

@@ -2,37 +2,37 @@
  {
   "case": "happy_path_answer",
   "status": "PASS",
-  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping (via USPS Priority). We roast and ship ",
-  "latency_s": 3.867100477218628,
+  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping (USPS Priority). We ship Tuesdays and F",
+  "latency_s": 1.1992292404174805,
   "extra": {
-   "answer": "US delivery takes 2–4 business days after shipping (via USPS Priority). We roast and ship on Tuesdays and Fridays; order before 9am on a roast day to ship same day. [faq.md]"
+   "answer": "US delivery takes 2–4 business days after shipping (USPS Priority). We ship Tuesdays and Fridays; orders placed before 9am on a roast day go out the same day. [faq.md]"
   }
  },
  {
   "case": "citation_present",
   "status": "PASS",
-  "detail": "We don't sell machines or grinders — our equipment lineup is a reusable steel fi",
-  "latency_s": 1.1847760677337646,
+  "detail": "No — we don't sell machines or grinders. Our only equipment is a reusable steel ",
+  "latency_s": 0.9588580131530762,
   "extra": {
-   "answer": "We don't sell machines or grinders — our equipment lineup is a reusable steel filter for French press ($14) and a ceramic V60-style dripper ($26). [catalogue.md]",
+   "answer": "No — we don't sell machines or grinders. Our only equipment is a reusable steel filter for French press ($14) and a ceramic V60-style dripper ($26). [catalogue.md]",
    "retry_needed": false
   }
  },
  {
   "case": "memory_followup",
   "status": "PASS",
-  "detail": "follow-up -> Shipments to Canada take 7–14 business days. We roast and ship on Tuesdays and Fridays, so",
-  "latency_s": 1.0486507415771484,
+  "detail": "follow-up -> 7–14 business days to Canada after shipping. We roast and ship on Tuesdays and Fridays, an",
+  "latency_s": 1.2675323486328125,
   "extra": {
-   "first": "Yes! We ship to Canada — international delivery takes 7–14 business days, and any customs duties are paid by the customer. [faq.md]",
-   "second": "Shipments to Canada take 7–14 business days. We roast and ship on Tuesdays and Fridays, so orders placed before 9am on a roast day go out the same day. [faq.md]"
+   "first": "Yes, we do — Canada is one of our international destinations. Delivery takes 7–14 business days, with customs duties paid by the customer. [faq.md]",
+   "second": "7–14 business days to Canada after shipping. We roast and ship on Tuesdays and Fridays, and orders placed before 9am on a roast day ship the same day. [faq.md]"
   }
  },
  {
   "case": "escalation_reply",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 6.872351408004761,
+  "latency_s": 4.332644939422607,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -41,7 +41,7 @@
   "case": "injection_refused",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 4.610306262969971,
+  "latency_s": 4.473469257354736,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -50,28 +50,35 @@
   "case": "malformed_body_survives",
   "status": "PASS",
   "detail": "HTTP 200 | {\"output\":\"I didn't catch that — could you please retype your question",
-  "latency_s": 0.09617018699645996,
+  "latency_s": 0.09800577163696289,
   "extra": {}
  },
  {
   "case": "empty_input_survives",
   "status": "PASS",
   "detail": "HTTP 200 | I didn't catch that — could you please retype your question? I can hel",
-  "latency_s": 0.09497714042663574,
+  "latency_s": 0.0789022445678711,
   "extra": {}
  },
  {
   "case": "long_input_survives",
   "status": "PASS",
-  "detail": "HTTP 200, 2160 chars in, 290 chars out",
-  "latency_s": 3.6645655632019043,
+  "detail": "HTTP 200, 2160 chars in, 279 chars out",
+  "latency_s": 1.4427490234375,
   "extra": {}
  },
  {
   "case": "concurrent_3_visitors",
   "status": "PASS",
-  "detail": "3/3 ok, wall 3.7s, max 3.7s",
-  "latency_s": 3.687997341156006,
+  "detail": "3/3 ok, wall 1.1s, max 1.1s",
+  "latency_s": 1.1313087940216064,
+  "extra": {}
+ },
+ {
+  "case": "public_tunnel_reachable",
+  "status": "PASS",
+  "detail": "HTTP 200 via https://factory-control-smooth-canvas.trycloudflare.com",
+  "latency_s": 4.573554754257202,
   "extra": {}
  }
 ]

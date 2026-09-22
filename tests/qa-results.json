@@ -868,6 +868,13 @@
   "detail": "[]"
  },
  {
+  "id": "T23.2",
+  "area": "quality",
+  "desc": "The shipped chat widget parses as valid JavaScript",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T14.1",
   "area": "security",
   "desc": "No secrets committed in the project tree",
@@ -894,5 +901,12 @@
   "desc": "A QA report exists in docs/",
   "status": "PASS",
   "detail": ""
+ },
+ {
+  "id": "T15.4",
+  "area": "docs",
+  "desc": "README states the real number of checks (130)",
+  "status": "PASS",
+  "detail": "README says 130"
  }
 ]

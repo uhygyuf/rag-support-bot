@@ -1,0 +1,42 @@
+[
+  {
+    "case": "file:// page calls the local webhook",
+    "status": "PASS",
+    "detail": "calls: [\"http://127.0.0.1:5678/webhook/local-id/chat\"]"
+  },
+  {
+    "case": "file:// page renders the answer",
+    "status": "PASS",
+    "detail": "2-4 business days [faq.md]"
+  },
+  {
+    "case": "hosted page fetches backend.json first",
+    "status": "PASS",
+    "detail": "calls: [\"backend.json\",\"https://live.example.trycloudflare.com/webhook/abc/chat\"]"
+  },
+  {
+    "case": "hosted page posts to the address from backend.json",
+    "status": "PASS",
+    "detail": "calls: [\"backend.json\",\"https://live.example.trycloudflare.com/webhook/abc/chat\"]"
+  },
+  {
+    "case": "missing backend.json falls back without throwing",
+    "status": "PASS",
+    "detail": "calls: [\"backend.json\",\"http://127.0.0.1:5678/webhook/local-id/chat\"]"
+  },
+  {
+    "case": "unreachable backend shows the offline sentence",
+    "status": "PASS",
+    "detail": "Sorry, our assistant is offline right now. Please email us and a human will reply as soon as we can."
+  },
+  {
+    "case": "no HTTP status or exception text reaches the visitor",
+    "status": "PASS",
+    "detail": "Sorry, our assistant is offline right now. Please email us and a human will reply as soon as we can."
+  },
+  {
+    "case": "the failure is logged to the console instead",
+    "status": "PASS",
+    "detail": "[support widget] Error: ECONNREFUSED"
+  }
+]
