@@ -96,8 +96,10 @@ the assistant is offline — the storefront itself never breaks.
 
 | Suite | What it covers | Last run |
 |---|---|---|
-| `tests/qa_suite.py` | **131 static + contract checks** (workflow shape 29, channels 23, reliability 17, UX 10, a11y 10, integration 10, safety 9, content 8, release 5, docs 4, security 4, quality 3) — no network, no writes | 131 / 131 PASS |
-| `tests/widget_dom_test.js` | 8 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n) and its offline behaviour, in a stubbed DOM | 8 / 8 PASS |
+| `tests/qa_suite.py` | **131 static + contract checks** (workflow shape 29, channels 23, reliability 17, UX 10, a11y 10, integration 10, safety 9, content 8, release 5, docs 4, security 4, quality 2) — no network, no writes | 131 / 131 PASS |
+| `tests/widget_dom_test.js` | 10 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n), its offline behaviour and its refusal to render an answer as HTML, in a stubbed DOM | 10 / 10 PASS |
+| `tests/test_ingest.py` | 13 offline cases for the loader: chunk boundaries, an oversized block, CRLF, a whitespace-only file, and the rule that the two APIs never share headers | 13 / 13 PASS |
+| `tests/kb_live_check.py` | reads the live knowledge base and compares it with `knowledge/`: every chunk names a file, every file is loaded, no stray source, chunk counts match the plan (needs credentials; skipped without them) | 5 / 5 PASS |
 | `tests/e2e_live.py` | **11 live cases** against a running instance: `happy_path_answer`, `citation_is_a_real_source`, `policy_document_reachable`, `memory_followup`, `escalation_reply`, `injection_refused`, `malformed_body_survives`, `empty_input_survives`, `long_input_survives`, `concurrent_3_visitors`, `public_tunnel_reachable` | 11 / 11 PASS |
 | crash recovery + out-of-band alert | watchdog script in `D:\Tools\n8n\` (scheduled task, every 5 min); verified by inducing both failures on purpose — kill n8n + tunnel, and a tunnel that is connected but unreachable at the edge | both repaired automatically, alerts `message_id` 35 / 36 |
 

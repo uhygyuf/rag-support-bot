@@ -3,8 +3,9 @@
 
    The widget decides where to send a question at runtime:
      data-webhook > backend.json (hosted copy) > data-local-webhook (file:// only)
-   These cases run the real file in a stubbed DOM and assert which URL it calls and
-   what the visitor sees when the backend does not answer. No browser, no network.
+   These cases run the real file in a stubbed DOM and assert which URL it calls, what the visitor
+   sees when the backend does not answer, and that an answer is rendered as text rather than HTML.
+   No browser, no network.
 
    Run:  node tests/widget_dom_test.js        (exit 0 = all cases pass) */
 
@@ -97,7 +98,7 @@ function lastBotMessage(dom) {
 
 async function main() {
   console.log('='.repeat(74));
-  console.log('WIDGET DOM TESTS: backend resolution and offline behaviour');
+  console.log('WIDGET DOM TESTS: backend resolution, offline behaviour, hostile text');
   console.log('='.repeat(74));
 
   /* 1. page opened from disk (file://) must talk to the local n8n webhook */
@@ -169,6 +170,27 @@ async function main() {
     record('no HTTP status or exception text reaches the visitor',
       msg.indexOf('500') === -1 && msg.indexOf('ECONNREFUSED') === -1 && msg.indexOf('Error') === -1, msg);
     record('the failure is logged to the console instead', dom.warns.length > 0, dom.warns.join(' | ').slice(0, 120));
+  }
+
+  /* 5. hostile text must never become markup: an answer is data, not HTML */
+  {
+    const dom = makeDom({ attrs: { 'data-local-webhook': LOCAL } });
+    dom.location = { protocol: 'file:', href: 'file:///site/index.html' };
+    const payload = '<img src=x onerror="window.pwned=1"> <script>window.pwned=2</script>';
+    const sandbox = runWidget(dom, () => Promise.resolve({
+      ok: true, text: () => Promise.resolve(JSON.stringify({ output: payload }))
+    }));
+    await tick();
+    ask(dom);
+    await tick();
+    const panel = elementById(dom, 'rgw-panel');
+    const log = panel.querySelector('#rgw-log');
+    const shown = lastBotMessage(dom);
+    record('an answer that contains HTML is shown as text', shown === payload,
+      JSON.stringify(shown.slice(0, 32)));
+    record('the answer never reaches innerHTML (nothing is parsed or executed)',
+      String(log.innerHTML).indexOf('<img') === -1 && sandbox.pwned === undefined,
+      'log.innerHTML=' + JSON.stringify(String(log.innerHTML).slice(0, 40)));
   }
 
   const failed = results.filter((r) => r.status === 'FAIL');

@@ -1,70 +1,102 @@
-# TEST_REPORT.md — release readiness of the Harbor Support Bot demo
+# Release-readiness report — Harbor RAG support bot
 
-Date: 2026-09-22 · Scope: the repository as it stands at commit `2d277c0` (plus the test and doc
-changes listed in section E) · Tester: automated session on the owner's machine (`E:\Hermes\Projects\rag-support-bot`)
+**Pass 2 (second pass, same day).** Pass 1 ran in the morning and found two answering defects
+(`BUG-1` fake citations, `BUG-2` a document that was never loaded). Both were fixed and the fixes
+were re-verified (details in pass 1's section H); this pass tests the project **after those fixes**,
+adds the coverage the first pass was missing, and answers one question: can this go in front of a
+reviewer as it stands?
 
-Every statement below carries the command that produced it. Anything not run is listed as not covered
-in section B — nothing in this report is inferred.
-
----
-
-## A. Verdict
-
-**Conditional release**, decided per delivery surface (one global yes/no would hide which part is
-actually usable):
-
-| Surface | Verdict | Condition |
-|---|---|---|
-| Demo website `https://uhygyuf.github.io/rag-support-bot/` (static page + widget) | **Release** | none — the page loads with the machine off; live answers need the machine running |
-| Live answers (website widget / Telegram / Gmail) | **Release** | BUG-1 and BUG-2 were fixed and re-verified on 2026-09-22 (section H): the knowledge base now carries a real `source` label per chunk and all three documents are loaded |
-| Public ingress (tunnel exposing n8n) | **Conditional release** | BUG-3: the chat endpoint is unauthenticated while the tunnel is up; keep the tunnel for demos only |
-| Operational scripts (watchdog, zombie cleanup, publish-backend-url) | **Release** | verified in earlier sessions and again on 2026-09-22 (section H: the watchdog hook that republishes a changed tunnel URL) |
-
-No P0 defect. No open P1. The two answering defects found in this pass were fixed and re-tested the
-same day; what remains open is one P2 deployment boundary (BUG-3) and the documented constraints in
-section F.
+- Project: `E:\Hermes\Projects\rag-support-bot` (public: `github.com/uhygyuf/rag-support-bot`),
+  state at commit `f00d269` plus the changes listed in section E.
+- Suite sources of truth: `tests/qa_suite.py`, `tests/widget_dom_test.js`, `tests/test_ingest.py`,
+  `tests/kb_live_check.py`, `tests/e2e_live.py`; machine-readable results in `tests/*-results.json`.
+- Pass 1's full report is preserved verbatim at `docs/qa-report-2026-09-22-pass1.md`.
+- Every command in section B was executed in this session; the outputs quoted are excerpts of the real
+  ones. Nothing here is inferred from the previous pass or from an earlier date.
 
 ---
 
-## B. Environment, commands actually run, what was NOT covered
+## A. Executive summary
 
-Environment: Windows 11 · n8n 2.38.7 at `127.0.0.1:5678` (pid serving, healthy) · Cloudflare quick
-tunnel `https://factory-control-smooth-canvas.trycloudflare.com` · Supabase pgvector · DeepSeek chat ·
-BAAI/bge-m3 embeddings · node v24.20.0 · python 3.13.
+**Conditional release.** Three conditions, all operational, none of them a code defect:
 
-| # | Command | Result |
-|---|---|---|
-| 1 | `python tests/qa_suite.py` | `QA SUITE: RAG support bot  130 checks, 0 failed` / `RESULT: ALL PASS` |
-| 2 | `node tests/widget_dom_test.js` | `WIDGET DOM: 8 cases, 0 failed` (exit 0) — new this run |
-| 3 | `python tests/e2e_live.py` | `RESULT: ALL PASS (9/9 passed)`, median 1.2 s |
-| 4 | `python tests/e2e_live.py --tunnel https://factory-control-smooth-canvas.trycloudflare.com` | `RESULT: ALL PASS (10/10 passed)`, public origin 4.6 s |
-| 5 | `curl -H "Origin: https://uhygyuf.github.io" -X POST <public webhook>` ×6 | HTTP 200 each; `Access-Control-Allow-Origin: https://uhygyuf.github.io` echoed |
-| 6 | `sha256sum site/<f>` vs `curl https://uhygyuf.github.io/rag-support-bot/<f>` for index.html, widget.js, backend.json | deployed copies equal the committed versions (compare against `git show HEAD:site/<f>`, not the working tree — see BUG-5) |
-| 7 | `curl <public>` for `/`, `/home`, `/rest/login`, `/healthz` | 200 / 200 / **401** / 200 |
-| 8 | Supabase REST read (read-only) `documents?select=id,metadata` and `tickets?order=created_at.desc` | 5 chunks, all `metadata.source="blob"`; ticket id 38 = the escalation question asked in this run |
-| 9 | `git grep -niE "hackenwang\|Han wang\|C:\\Users\|E:\\Hermes\|D:\\Tools\|F:\\Fiverr"` | one hit: `LICENSE:3 Copyright (c) 2026 Wang Han` (intentional) |
-| 10 | n8n execution store read (read-only, sqlite copy + `flatted` parse) | executions 138/139 (Gmail channel), 144 (widget escalation, `Insert Ticket` → row id 30), list of today's runs |
+1. **Before anyone outside the house opens the demo, replace the live CRM endpoint** (`BUG-9`, P2).
+   The running instance still forwards every escalated question to a personal `webhook.site` address
+   that anyone can read without credentials. The repository copy is already scrubbed and guarded; the
+   live workflow is not. Fixing it is a five-minute import cycle on the owner's machine.
+2. **The answering half only works while the owner's PC is awake.** The published page and widget load
+   from GitHub Pages with the machine off, but a question then shows `Sorry, our assistant is offline
+   right now`. Watchdog recovery covers crashes, not shutdowns. A 60-second recording or a VPS removes
+   this condition; `docs/operations.md` 3.2 states it plainly.
+3. **No ticket UI.** Escalations land in the Supabase `tickets` table and a Telegram alert; there is no
+   dashboard. Accepted and documented in `docs/operations.md` 4.
 
-Scope covered: workflow structure and wiring, channel contracts, knowledge-base content, security
-(secret + PII scan, public endpoint probe), accessibility rules in the widget, the widget's runtime
-backend resolution, live answering paths over the public origin, artifact/deployment agreement.
+Pass 1's blockers are gone and verified: citations now come from the loaded file names
+(`[faq.md]` / `[policies.md]` / `[products.md]`, five live questions re-checked here), and
+`knowledge/policies.md` is loaded, so questions only that file answers are answered instead of
+escalated. No open P0 or P1 defect remains in the areas tested (section C, section F).
 
-**Not covered (no evidence either way):**
+---
 
-- Telegram and Gmail channels were not re-run today; their last verified live runs are 2026-09-18/19.
-- Mobile browsers, Safari, Firefox and Edge were not exercised; only HTTP-level checks and a stubbed
-  DOM were used (no real browser was driven).
-- No screen-reader pass; accessibility evidence is limited to automated rules (labels, live region,
-  dialog semantics, contrast ratios).
-- No load test beyond 3 concurrent requests (the `concurrent_3_visitors` case).
-- The CRM webhook remains a placeholder (`PUT_YOUR_CRM_WEBHOOK_URL`), so `Push to CRM` was not verified.
-- No penetration testing: the public probes were read-only GETs plus the intended chat POST.
-- Watchdog and zombie-cleanup recovery were not re-induced in this run (last induced verification:
-  2026-09-20, `message_id` 35/36).
+## B. Environment, commands actually run, scope, and coverage
 
-**Side effects of this test run (disclosed):** live paid API calls to DeepSeek and the embedding
-provider; three ticket rows created in Supabase by escalation tests (incl. id 38); no data deleted,
-no configuration changed, the knowledge base was not written to.
+**Environment.** Windows 11, git-bash (MSYS). `python 3.11.15`, `node v24.20.0`. n8n 2.38.7 on
+`http://127.0.0.1:5678`, published through a cloudflared quick tunnel
+(`https://location-progress-finance-luck.trycloudflare.com`, matching `backend.json` on the published
+site). Supabase Postgres with pgvector (`documents`, `tickets`). DeepSeek for chat, SiliconFlow
+`BAAI/bge-m3` for embeddings. GitHub Pages serves the static copy
+(`https://uhygyuf.github.io/rag-support-bot/`). The watchdog runs as a scheduled task every 5 minutes.
+There is no dependency manifest to install — the project is scripts (Python stdlib + Node stdlib) and
+n8n workflow JSON — so "build" means "the shipped JavaScript parses and the suites run".
+
+| # | Command (exact) | Real output excerpt | Exit |
+|---|---|---|---|
+| 1 | `python tests/qa_suite.py` | `QA SUITE: RAG support bot  131 checks, 0 failed` / `RESULT: ALL PASS` | 0 |
+| 2 | `node tests/widget_dom_test.js` | `WIDGET DOM: 10 cases, 0 failed` | 0 |
+| 3 | `python tests/test_ingest.py` | `INGEST UNIT: 13 cases, 0 failed` / `RESULT: ALL PASS` | 0 |
+| 4 | `python tests/kb_live_check.py` | `LIVE KB: 5 cases, 0 failed` / `stored={'faq.md': 4, 'policies.md': 2, 'products.md': 2} plan={…same…}` | 0 |
+| 5 | `python tests/e2e_live.py` | `RESULT: ALL PASS (10/10 passed)`, `latency: median 1.0s max 4.3s (n=10)` | 0 |
+| 6 | `python tests/e2e_live.py --tunnel $(cat D:/Tools/n8n/public-url.txt)` | `PASS public_tunnel_reachable 2.1s HTTP 200 via https://location-progress-finance-luck.trycloudflare.com` / `RESULT: ALL PASS (11/11 passed)` | 0 |
+| 7 | `python tools/ingest.py --replace` (run twice) | `faq.md  4 chunks stored with source=faq.md (HTTP 201)` … second run: 8 rows again, ids 21-28, labels unchanged | 0 |
+| 8 | `curl <public>/`, `/home`, `/rest/login`, `/healthz`, `/rest/workflows` | `200`, `200`, `401`, `200`, `401` | 0 |
+| 9 | `curl -X OPTIONS <public>/webhook/…/chat -H "Origin: https://uhygyuf.github.io" -H "Access-Control-Request-Headers: content-type"` | `OPTIONS 204` + `Access-Control-Allow-Origin: https://uhygyuf.github.io`, `allow-headers: content-type`, `allow-methods: OPTIONS, GET, POST` | 0 |
+| 10 | cross-origin `POST` of `Can I pause my subscription?` from the Pages origin | `POST 200` → `… pause or skip a delivery from your account up to 24 hours before the roast day … [faq.md]` | 0 |
+| 11 | `for f in index.html widget.js backend.json; sha256(git show HEAD:site/$f) vs sha256(curl <pages>/$f)` | all three identical (`一致`) | 0 |
+| 12 | `curl -s "https://webhook.site/token/<uuid>/requests"` (read-only) | `公开地址已捕获请求总数: 39`; fields present: `question`, `source`; newest `2026-09-22 11:31:54` → `BUG-9` | 0 |
+| 13 | `git grep -n -I -E "hackenwang\|7587322367\|Wang Han\|sb_secret_\|sk-[A-Za-z0-9]{10}"` | only `LICENSE:3: Copyright (c) 2026 Wang Han` and documented placeholders (`sb_secret_...`) | 0 |
+| 14 | read `documents` (`?select=id,metadata&order=id`) | `行数: 8 Counter({'faq.md': 4, 'policies.md': 2, 'products.md': 2})` | 0 |
+| 15 | watchdog log + service state | `19:29:05  healthy: service pid 50748, tunnel https://location-progress-finance-luck.trycloudflare.com`; `healthz` `200` | 0 |
+| 16 | two identical escalations (`Do you offer guided tours of a vineyard?` ×2) then read `tickets` | both answered and grounded (`[policies.md]`); exactly one new row for that question (`id 47`) | 0 |
+| 17 | five citation questions through the public origin (`Ethiopia Guji`, `Canada`, `franchise`, `environmental policy`, `pause subscription`) | answers end with `[products.md]`, `[faq.md]`, `[policies.md]`, `[policies.md]`, `[faq.md]` | 0 |
+
+**In scope.** The fixed answering path end to end (widget → tunnel → n8n → retrieval → model → answer
+→ escalation), the deployed static copy, the live knowledge base, the new loader, the
+published-versus-repo agreement, the public ingress surface, the citation contract, the widget's
+rendering path, and the suites themselves.
+
+**Coverage by risk area.** Core journeys (highest risk, all executed live) → widget resolution, happy
+path, citations, memory, escalation, refusals. Permissions/authorization → the n8n REST surface
+(`401` without a session) and the by-design open chat webhook (`BUG-3`). Boundary and hostile input →
+malformed body, empty input, oversized input, prompt injection, HTML inside an answer, CRLF and
+oversized knowledge files. Error paths → backend unreachable, missing `backend.json`, `404`/`500`
+handling in the widget. Release gates → documentation-versus-reality, secret/PII scan, deployment
+agreement, knowledge-base agreement.
+
+**NOT covered in this run (explicitly).** No real Safari, Firefox, or Edge run, and no physical mobile
+device (the widget avoids optional chaining and arrow functions, using only `fetch` and
+`AbortController` — that is a code reading, not a test). No screen reader, no automated contrast
+measurement. No load beyond three concurrent visitors, no soak beyond this session, no induced
+Supabase/DeepSeek outage drill, and no live Telegram or Gmail channel send in this pass. No dependency
+vulnerability scan (no dependency manifest exists; the n8n image's own packages were not audited). The
+n8n editor UI was not exercised (CLI and HTTP only). Cloudflare Pages as an alternative host was not
+tested. And nobody else has run these suites — they are proven on one machine only.
+
+**Side effects of this run (disclosed).** Live paid calls to DeepSeek and SiliconFlow (the 10/10 and
+11/11 E2E runs, the citation questions, and one `--replace` re-ingest). One ticket row created by the
+escalation test (`id 47`), plus earlier rows from pass 1. The knowledge base was rewritten **with the
+same content** (ids 21-28; pass 1 backed the previous rows up, and the re-run is idempotent — proven in
+cmd 7). No configuration was changed, nothing was deleted from the repository, and no credential value
+is quoted in this file.
 
 ---
 
@@ -72,121 +104,119 @@ no configuration changed, the knowledge base was not written to.
 
 | Test area | Status | Evidence | Notes |
 |---|---|---|---|
-| Static + contract suite (130 checks) | PASS | command 1 | areas: workflow 29, channels 23, reliability 17, UX 10, a11y 10, integration 10, safety 9, content 8, release 5, docs 4, security 3, quality 3 |
-| Widget backend resolution + offline behaviour (new) | PASS | command 2 | file:// → local webhook; hosted → `backend.json`; missing `backend.json` → falls back; unreachable backend → fixed offline sentence, no HTTP code |
-| Live end-to-end, local origin | PASS | command 3 | happy path, citation present, memory, escalation, injection refused, malformed/empty/oversized input, 3 concurrent visitors |
-| Live end-to-end, public origin | PASS | command 4 | the deployed page's path works end to end |
-| Cross-origin behaviour from the Pages origin | PASS | command 5 | CORS echo verified, answers grounded in the knowledge base |
-| Deployment agreement (repo vs Pages) | PASS | command 6 | all three published files identical to `HEAD` |
-| Public ingress | CONDITIONAL | command 7 | `/rest/login` returns 401 (good); the editor login page and `/healthz` are public; the chat webhook is unauthenticated by design → BUG-3 |
-| Knowledge base content | **FAIL** | command 8 + BUG-2 repro | 5 chunks from 2 of the 3 documents; `policies.md` absent |
-| Answer citation contract | **FAIL** | command 5 + BUG-1 repro | citation label is `[blob]` or a copy of the prompt example, not retrieval metadata |
-| Escalation side effect (row actually written) | PASS | command 8 | `tickets` id 38 matches the question asked through the public origin |
-| Secret / PII scan of the tracked tree | PASS | command 9 | no keys, no machine paths; only the intentional license line |
-| Documentation accuracy | PASS after fix | command 1 (`T15.4`) | README quoted 128 checks against a real 130; the new check caught it, README corrected |
+| Static + contract suite (131 checks) | PASS | cmd 1 | areas: workflow 29, channels 23, reliability 17, UX 10, a11y 10, integration 10, safety 9, content 8, release 5, docs 4, security 4, quality 2 |
+| Widget DOM suite (10 cases) | PASS | cmd 2 | backend resolution, missing `backend.json`, offline sentence, and **new**: an answer containing HTML is displayed as text and never parsed |
+| Loader unit tests (13 cases, new) | PASS | cmd 3 | chunk boundaries, an oversized block split rather than truncated, every line accounted for, CRLF, whitespace-only file, the two APIs never share headers, `--dry-run` calls nothing, a bad secrets file is refused by name |
+| Live knowledge base vs `knowledge/` (5 cases, new) | PASS | cmd 4 | 8 chunks: `faq.md` 4, `policies.md` 2, `products.md` 2; no `blob`, no stray source, counts match the loader's own plan |
+| Live end-to-end, local origin (10 cases) | PASS | cmd 5 | happy path, real citation, memory, escalation, injection refused, malformed/empty/oversized input, 3 concurrent visitors; median 1.0 s |
+| Live end-to-end, public origin (11 cases) | PASS | cmd 6 | includes `public_tunnel_reachable`: HTTP 200 in 2.1 s through the tunnel |
+| Answer citations name a real file | PASS (fixed) | cmds 6, 10, 17 | five live questions spanning all three documents |
+| Questions that only `policies.md` answers | PASS (fixed) | cmds 16, 17 | `Do you offer franchise opportunities?` → `We don't offer franchise opportunities … [policies.md]`; `What is your environmental policy?` → `… [policies.md]` |
+| Knowledge-base load is idempotent | PASS | cmd 7 | a second `--replace` left exactly 8 rows with unchanged labels |
+| Escalation side effect (a row really is written) | PASS | cmd 16 | one row per escalated question, no double insert; the path has no dedupe by design, so asking the same unanswerable question twice can legitimately leave two rows |
+| Widget XSS surface | PASS | cmd 2 | dynamic text goes through `textContent` (`site/widget.js` 127/189/193, static check `T12.5`); the new DOM case renders `<img onerror=…>` verbatim, leaves `innerHTML` empty, executes nothing |
+| Prompt injection | PASS | cmd 5 | `injection_refused` case; the injection text is still stored as a ticket, which is the intended audit behaviour |
+| Cross-origin behaviour from the Pages origin | PASS | cmds 9, 10 | preflight `204` with the exact origin echoed; a real grounded answer over the tunnel |
+| Public ingress surface | CONDITIONAL | cmd 8 | `/rest/login` and `/rest/workflows` `401` (good); `/`, `/home` (editor login page) and `/healthz` are reachable; the chat webhook is unauthenticated by design → `BUG-3`, accepted for a demo and documented |
+| Deployment agreement (repo vs published) | PASS | cmd 11 | `index.html`, `widget.js`, `backend.json` byte-identical to `HEAD` |
+| Secret / PII scan of the tracked tree | PASS | cmd 13 | one intentional license line and documentation placeholders only |
+| Live CRM endpoint exposure | **FAIL** | cmd 12 | 39 requests captured at a publicly readable third-party address, including `question` and `source` → `BUG-9` (open) |
+| Documentation accuracy | PASS after fix | cmd 1 + `BUG-10` | the README's per-area breakdown said `quality 3` and `8 DOM cases` while the suites have 2 and 10 — corrected; `T15.4` keeps the total honest |
+| Recovery automation (watchdog) | PASS (observed) | cmd 15 | healthy scans every 5 minutes, and a changed tunnel triggers `hook finished OK …`; crash recovery itself was last induced on 2026-09-20 and was **not** re-induced here |
+| Accessibility baseline (static only) | PASS (static) | cmd 1 | 10 a11y checks: accessible names, `aria-live` log, labelled input, `role=dialog`, `textContent` insertion; no runtime or assistive-technology check |
 
 ---
 
 ## D. Bug list
 
-### BUG-1 — P1 — Answer citations do not come from the knowledge base
+### BUG-9 — P2 — the live CRM push forwards every escalated question to a publicly readable endpoint
 
-- **Reproduction:** `POST <public webhook>` `{"action":"sendMessage","sessionId":"x","chatInput":"What is in the Night Watch blend?"}`
-  - actual: `… works well for drip and moka, and comes in 340 g ($19.00) or 1 kg ($48). [blob]`
-  - also actual: `… is $22 for 250 g. [blob]`
-  - expected: the answer ends with the real source file name, e.g. `[products.md]`
-- **Second manifestation:** FAQ-style answers end with `[faq.md]`, which is the literal example in the
-  agent's system prompt (`End every real answer with the source file name in square brackets, e.g. [faq.md]`).
-  The model is echoing the example; it is not reading metadata.
-- **Root cause:** every chunk in `documents` carries `metadata.source = "blob"` (the binary property name
-  used at ingestion, not the uploaded file's name). The citation is therefore a model choice with no
-  data behind it, while the prompt+workflow make the citation look authoritative.
-- **Fix (not applied — needs a knowledge-base re-ingest and a workflow re-publish):**
-  1. at ingestion, write the real file name into the chunk metadata (`Default Data Loader` metadata /
-     form field name instead of `blob`);
-  2. make the citation mechanical: append the retrieved chunks' `source` to the reply instead of asking
-     the model for it;
-  3. add a regression assertion: a citation must match one of the three known file names, and `[blob]`
-     must fail.
-- **Detected by:** manual probe in this run. The `citation_present` E2E case passes on any bracketed
-  string, so it did not catch this — see section F.
+- **Reproduction:** `POST <public>/webhook/…/chat` with an unanswerable question (the escalation path),
+  then read the captured payloads back: `curl -s https://webhook.site/token/<uuid>/requests`.
+- **Actual:** the sink holds **39** captured requests; the payload contains `question` and `source`
+  fields; the newest entry is from this test session. Anyone who knows the URL can read them — this
+  check read them without credentials. Until pass 1, the same URL also sat in the public repository.
+- **Expected:** the demo posts to a placeholder, to the owner's own endpoint, or nowhere.
+- **Root cause:** a leftover test endpoint from when `Push to CRM` was built. Refreshing the workflow
+  JSON from the live instance in pass 1 copied it into the repo; nothing on the instance was changed.
+- **Status:** the repository copy is fixed (`PUT_YOUR_CRM_WEBHOOK_URL`) and guarded by `T22.6` (scans
+  every `workflow/*.json` for `webhook.site`). **The live instance still points there; that needs the
+  owner's go-ahead**, because clearing it is a publish/restart cycle on his machine. Condition 1 of the
+  verdict.
+- **Impact if shared as-is:** questions typed into the demo (fictional data, so no real personal
+  information) are readable by strangers, and a reviewer who spots the endpoint will count it against
+  the project. No credential is exposed.
 
-### BUG-2 — P2 — `knowledge/policies.md` was never ingested, so the bot refuses questions its own documents answer
+### BUG-10 — P3 — the README's test breakdown disagreed with the suites
 
-- **Reproduction:** `POST <public webhook>` `{"chatInput":"Do you offer hiring or franchise?"}`
-  - actual: `I don't have that information - I've passed your question to our team …`
-  - expected: `We do not offer franchise opportunities. [policies.md]` (the fact is in
-    `knowledge/policies.md` line 23)
-- **Root cause:** the live `documents` table holds 5 chunks, from `faq.md` (lines 1-34) and
-  `products.md` (lines 1-26) only. `policies.md` is missing, while `README.md` (line 68 and line 131)
-  states that three documents are ingested.
-- **Fix:** re-ingest `knowledge/policies.md` through the ingestion form trigger, then re-run
-  `python tests/e2e_live.py` and this repro. Owner action (writes to the live knowledge base).
+- **Reproduction:** compare the area tags in `tests/qa-results.json` with the README table.
+- **Actual:** README said `quality 3` (the suite has 2) and `widget DOM 8 cases` (now 10). The total
+  (131) was already guarded by `T15.4`; the breakdown was not.
+- **Fix:** README updated, and the two new suites are listed there. No code change.
 
-### BUG-3 — P2 — Public ingress exposes the n8n login page and an unauthenticated chat endpoint
+### BUG-11 — P3 — two assertions in the new loader tests were wrong (test-side bug, not a product bug)
 
-- **Reproduction:** `curl -o /dev/null -w "%{http_code}" <public>/home` → `200`; `<public>/rest/login` → `401`;
-  `<public>/healthz` → `200`; the chat webhook accepts a POST from any client.
-- **Impact:** anyone with the URL can attempt the editor login, and can consume the paid DeepSeek /
-  embedding quota through the chat webhook. Not a product defect — a deployment boundary that the
-  documentation already states.
-- **Fix options:** keep the tunnel up only while demoing (current practice); or front it with
-  Cloudflare Access; or move n8n to a VPS with authentication when the demo needs 24/7 answers.
+- **Reproduction:** the first run of `python tests/test_ingest.py` → `13 cases, 2 failed`.
+- **Actual:** `T1.4` expected the last chunk to end at line 200 in a document that has 400 lines (my
+  fixture put a blank line between blocks); `T3.2` expected the error message to name `siliconflowKey`
+  while `read_secrets` legitimately reports the **first** missing field (`siliconflowUrl`).
+- **Classification:** test bug. No product file was touched; the assertions were corrected and the suite
+  now reports `13 cases, 0 failed`.
 
-### BUG-4 — P3 — Documentation drift on the check count (fixed, now guarded)
+### Status of the defects found in pass 1
 
-- README quoted "128 static + contract checks" while the suite ran 130. The new `T15.4` check compares
-  the README number with the suite's real total, so the drift fails the suite from now on.
-
-### BUG-5 — P3 — Line endings make local/dev-deployed hash comparisons misleading
-
-- `demo/publish-backend-url.ps1` writes LF; the git working tree checks files out as CRLF, so
-  `sha256sum site/backend.json` differs from the published copy while the committed content is
-  identical. Cosmetic; reported because it wastes debugging time. Fix: compare against `git show HEAD:`
-  (as done in command 6).
-
-### BUG-6 — P3 — Fixed during this run: suite assumptions vs. the new widget
-
-- After the widget gained runtime backend resolution, `T11.1`/`T11.2` failed (`data-webhook` was
-  renamed) and `T14.1` reported a false secret (`sb_secret_...` as a literal in the setup notes).
-- Fixed: the webhook check accepts `data-webhook` or `data-local-webhook`; new `T11.3` validates
-  `site/backend.json`; the secret pattern now requires a realistic key length.
-
----
-
-## E. Files changed and why
-
-| File | Change | Reason |
+| Defect | Priority | Status now |
 |---|---|---|
-| `tests/qa_suite.py` | `T11.1`/`T11.2` accept both webhook attributes; new `T11.3` (hosted `backend.json`), `T23.2` (the widget parses), `T15.4` (README check count); `_js_syntax_error` helper; secret pattern length; plain-language comments | keep the suite true after the widget change; guard the new artifact; close the documented-count drift |
-| `tests/widget_dom_test.js` | new file, 8 cases in a stubbed DOM | the widget's backend resolution and offline behaviour had no test |
-| `tests/qa-results.json`, `tests/e2e-results.json`, `tests/widget_dom-results.json` | refreshed | machine-readable evidence for this report |
-| `README.md` | check count 130, DOM suite row added | documentation accuracy (`T15.4` enforces it) |
-| `site/widget.js`, `site/index.html` | earlier pass in this session: no em dashes/arrows, shorter comments, simpler `aria-label` | requested style pass; behaviour unchanged (re-verified by commands 2, 3, 4) |
+| `BUG-1` citations were not from the knowledge base (`[blob]`, or the prompt's own example `[faq.md]`) | P1 | **Fixed and re-verified** — real labels are stored, the prompt no longer shows a copyable file name, and `citation_is_a_real_source` fails on anything that is not a real file |
+| `BUG-2` `knowledge/policies.md` was never ingested | P2 | **Fixed and re-verified** — loaded (2 chunks), with `policy_document_reachable` guarding it |
+| `BUG-3` public ingress exposes the editor login page and an open chat endpoint | P2 | Accepted for a demo and documented (`docs/operations.md`); still true in this pass (cmd 8) |
+| `BUG-4` documentation drift on the check count | P3 | Fixed, guarded by `T15.4` |
+| `BUG-5` line endings make hash comparisons misleading | P3 | Documented in pass 1; deployment agreement re-checked in this pass (cmd 11) |
+| `BUG-6` suite assumptions versus the new widget | P3 | Fixed in pass 1 |
+| `BUG-7` live third-party endpoint in the repo copy (the same defect as `BUG-9`) | P2 | Repository fixed and guarded; the live instance is open |
+| `BUG-8` three checks passed on configuration the runtime ignores | P3 | Fixed — they now assert rendered behaviour |
 
 ---
 
-## F. Remaining risks, limitations, next steps
+## E. Files changed in this pass, and why
 
-1. **The citation case is too weak.** `tests/e2e_live.py::citation_present` accepts any bracketed text,
-   which is why BUG-1 survived a green run. Replace it with "the citation equals one of the known
-   document names" and let `[blob]` fail.
-2. **The live knowledge base is not covered by the static suite** (it needs credentials and network).
-   BUG-2 was only visible by reading the store. Either add an opt-in live check or verify the store
-   before each demo.
-3. **Availability is bounded by the machine being awake.** The hosted page always loads; answers stop
-   when the laptop sleeps, and the tunnel hostname changes on every restart (`demo\publish-backend-url.bat`
-   refreshes `site/backend.json`). 24/7 answers require a VPS.
-4. **Telegram and Gmail were not re-run today.** Add them to the pre-demo checklist or to an opt-in
-   E2E run.
-5. **Accessibility evidence is automated only** (labels, live region, dialog role, contrast). Keyboard
-   order and screen-reader behaviour were not exercised.
-6. **No monitoring or error budget** beyond the Telegram alert from the `Error Trigger` workflow and
-   the watchdog's own alerts.
+| File | Why |
+|---|---|
+| `tests/test_ingest.py` (new, 13 cases) | The loader writes straight into the live knowledge base; its chunking and its credential handling had no tests at all. Two assertions were wrong on the first run and were corrected (`BUG-11`). |
+| `tests/kb_live_check.py` (new, 5 cases) | `BUG-1` and `BUG-2` both lived in the live store, which the static suite cannot see. This reads `documents`, compares it with `knowledge/`, and skips cleanly with instructions when credentials are absent. |
+| `tests/widget_dom_test.js` (+2 cases) | The security review asked whether a hostile knowledge document could become markup in the page. Two cases now prove it cannot. |
+| `README.md` | Lists the two new suites and their results; the per-area breakdown corrected (`quality 2`, 10 DOM cases) — `BUG-10`. |
+| `TEST_REPORT.md` | This report. |
+| `docs/qa-report-2026-09-22-pass1.md` (copy) | Pass 1's report, kept verbatim for the record. |
 
-Next actions, in order: (1) re-ingest `knowledge/policies.md`; (2) fix the citation metadata + make the
-citation mechanical; (3) tighten the citation E2E case; (4) re-run commands 1-4 and confirm BUG-1 and
-BUG-2 are gone.
+No production file was modified in this pass. The changes to the workflow, the loader, the widget and
+the documentation came from pass 1's fixes and are recorded in pass 1's section H and in commit
+`8885704`.
+
+---
+
+## F. Remaining risks, limitations, and next steps
+
+1. **Awake-machine dependency (highest practical risk for a reviewer).** The static page always loads;
+   answers require the owner's PC, the tunnel and the watchdog. Mitigations: record the walkthrough, or
+   move the workflow to a small VPS. The current state is stated on the page itself.
+2. **The live CRM endpoint (`BUG-9`).** One import cycle from being a non-issue; until then, treat the
+   demo URL as "not for sharing outside the house".
+3. **Quick-tunnel hostname churn.** Cloudflare quick tunnels change hostname on restart, which is the
+   defect that took the page offline earlier the same day. The watchdog now republishes `backend.json`
+   when that happens (watchdog 1.1.0, 31 self-tests). Recovery still depends on the machine being awake.
+4. **Single-machine evidence.** Every suite has only ever run here. Having one other person run the
+   three commands in section B on their own machine is the cheapest remaining confidence gain, and the
+   one gap a reviewer can close for free.
+5. **Test-side blind spots.** No real-browser, screen-reader, or long-running-load evidence; no chaos
+   drill against the model or database providers; no dependency CVE scan (no manifest exists).
+6. **Open, accepted, documented:** no ticket dashboard; the open chat webhook (`BUG-3`); and the n8n
+   binary loader cannot label chunks, so customer-facing documents must be loaded with
+   `tools/ingest.py` (`docs/operations.md` 3.4).
+7. **Next steps, in order:** (a) replace the live CRM endpoint — needs the owner; (b) have someone else
+   run the three suites; (c) decide hosted-versus-VPS for a demo that survives a shutdown; (d) prune the
+   Fiverr-era documents (`docs/fiverr-paste-ready.md`, `docs/gig-copy-n8n-chatbot.md`) that no longer
+   match what the project is for.
 
 ---
 
@@ -194,68 +224,15 @@ BUG-2 are gone.
 
 | Item | State |
 |---|---|
-| Static suite, lint-equivalent checks, JS parse gates | PASS (131 checks) |
-| Critical journeys pass (website path, local + public) | PASS (8 DOM + 11 live cases) |
-| No unresolved P0/P1 | PASS — BUG-1 fixed and re-verified (section H) |
-| No known high-severity security issue or data leak | PASS for secrets/PII; ingress exposure documented as BUG-3; the live third-party CRM endpoint found in the repo copy is removed and guarded (BUG-7) |
-| Rollback / recovery path exists and is documented | PASS — watchdog + zombie cleanup + documented start/stop (`docs/operations.md`) |
-| Operational documentation exists | PASS — `docs/operations.md`, `docs/client-setup-guide.md`, `docs/acceptance-checklist.md` |
-| Deployment matches the repository | PASS (command 6) |
-| Remaining P2/P3 documented with impact | PASS — this section and D |
-| Knowledge base matches the documented content | PASS — 3 documents, 8 chunks, each labelled with its real file name (section H) |
-
----
-
-## H. Follow-up: fixes applied on 2026-09-22, after this report
-
-Both answering defects were fixed and re-tested in the same session.
-
-**BUG-1 (citations)** — the stored rows now carry the real file name, and the agent's rule 5 no longer
-contains a literal example to copy:
-
-- `documents` was rebuilt: 8 chunks, `metadata.source` = `faq.md` (4), `policies.md` (2),
-  `products.md` (2). Verified by reading the table back (ids 13-20).
-- Live answers now end with the file they came from:
-  `How much is the Ethiopia Guji?` → `… $22 for 250 g … [products.md]`;
-  `Do you ship to Canada?` → `… 7-14 business days … [faq.md]`;
-  `What is your environmental policy?` → `… [policies.md]`.
-- `tests/e2e_live.py` now fails on a citation that is not one of the three file names, so `[blob]`
-  cannot pass again (`citation_is_a_real_source`).
-
-**BUG-2 (missing document)** — `knowledge/policies.md` is loaded, and the question that used to be
-escalated is answered: `Do you offer franchise opportunities?` → `We don't offer franchise
-opportunities … [policies.md]` (it is line 23 of that file). A regression case,
-`policy_document_reachable`, asserts it cannot silently go back to escalating.
-
-**BUG-7 (new, P2, security) — the repository shipped a live third-party endpoint.** Refreshing
-`workflow/SupportBotRAG-full.json` from the running instance exposed that `Push to CRM` points at a
-personal `https://webhook.site/<uuid>` sink (a leftover from testing the CRM push), which had been
-copied into the public repo. The repo copy is back to `PUT_YOUR_CRM_WEBHOOK_URL` and a new check
-(`T22.6`) scans every `workflow/*.json` for `webhook.site` so it cannot return. The live instance still
-points at that sink; it receives fictional demo questions only, and it should be repointed or blanked
-when the demo is handed to anyone.
-
-**BUG-8 (new, P3) — three checks were passing on dead configuration.** Refreshing the artifact revealed
-that `T4.5`/`T4.8` demanded parameter values n8n omits when they equal the default (the editor
-normalizes them away, the behaviour is unchanged), and `T6.6`/`T6.7` asserted `suggestedPrompts`,
-`agentName` and `agentIcon` on the chat trigger, which n8n 2.38.7 does not render at all. Those two now
-assert what a visitor actually gets (the widget's own greeting and its quick-start chips, which
-`T16.2`/`T16.4` cover from the client side). The lesson: assert rendered behaviour, not configuration
-that the runtime ignores.
-
-**How the knowledge base is loaded now.** `tools/ingest.py` (new) chunks `knowledge/*.md`, embeds the
-chunks with the workflow's model and writes the rows with `metadata.source`, replacing the upload form
-for anything a customer reads. Reason: n8n 2.38.7's binary loader hardcodes `source = "blob"` and the
-node has no metadata parameter — reproductions and evidence are in `docs/operations.md` section 3.4
-(executions 195/196/197). The form node stays for experiments and is documented as such.
-
-**Re-test after the fixes** (same day):
-
-| Command | Result |
-|---|---|
-| `python tests/qa_suite.py` | `131 checks, 0 failed` / `RESULT: ALL PASS` |
-| `python tests/e2e_live.py` | `ALL PASS (10/10)`, median 3.5 s |
-| `python tests/e2e_live.py --tunnel <current tunnel>` | `ALL PASS (11/11)`, public origin 4.7 s |
-| read back `documents` | 8 chunks, sources `faq.md` / `policies.md` / `products.md` |
-| watchdog run after a tunnel restart | `hook finished OK for https://location-progress-finance-luck.trycloudflare.com`, no repeat on the next scan |
-| deployed site vs repo (`git show HEAD:site/...` vs the served file) | identical for index.html, widget.js, backend.json |
+| Build / parse gates pass | PASS — `T23.1` (every Code node in the shipped workflows parses), `T23.2` (the widget parses), cmd 1 |
+| No unresolved P0 | PASS — none found in either pass |
+| No unresolved P1 | PASS — `BUG-1` was the only one, fixed and re-verified |
+| Critical journeys pass | PASS — 10/10 local, 11/11 public, widget DOM 10/10 |
+| No known high-severity security issue | PASS for secrets, PII and the widget's rendering path; the two open P2s are `BUG-3` (accepted, documented) and `BUG-9` (needs the owner) |
+| Deployment matches the repository | PASS — the three published files are byte-identical to `HEAD` |
+| Knowledge base matches the documented content | PASS — 8 chunks, three files, real labels, counts match the loader's plan |
+| Citations are traceable to a document | PASS — five live questions across all three files |
+| Rollback / recovery path exists and is documented | PASS — watchdog + zombie cleanup + documented start/stop; recovery induced on 2026-09-20, not re-induced in this pass |
+| Operational documentation exists | PASS — `docs/operations.md` (incl. 3.4 on ingestion), `docs/client-setup-guide.md`, `docs/acceptance-checklist.md` |
+| Remaining P2/P3 risks documented with impact | PASS — sections D and F |
+| Conditions for wider sharing stated | PASS — section A (three conditions) |

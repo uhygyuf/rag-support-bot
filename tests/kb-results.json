@@ -1,0 +1,45 @@
+{
+ "rows": 8,
+ "sources": {
+  "faq.md": 4,
+  "policies.md": 2,
+  "products.md": 2
+ },
+ "expected": {
+  "faq.md": 4,
+  "policies.md": 2,
+  "products.md": 2
+ },
+ "results": [
+  {
+   "id": "K1",
+   "description": "the knowledge base is not empty",
+   "status": "PASS",
+   "detail": "8 rows"
+  },
+  {
+   "id": "K2",
+   "description": "every chunk names a source file, none says \"blob\" or is empty",
+   "status": "PASS",
+   "detail": "sources=['faq.md', 'policies.md', 'products.md']"
+  },
+  {
+   "id": "K3",
+   "description": "every repository document is loaded",
+   "status": "PASS",
+   "detail": "missing=[]"
+  },
+  {
+   "id": "K4",
+   "description": "no stored chunk comes from a file that is not in knowledge/",
+   "status": "PASS",
+   "detail": "unexpected=[]"
+  },
+  {
+   "id": "K5",
+   "description": "the chunk count per file matches what tools/ingest.py would write",
+   "status": "PASS",
+   "detail": "stored={'faq.md': 4, 'policies.md': 2, 'products.md': 2} plan={'faq.md': 4, 'policies.md': 2, 'products.md': 2}"
+  }
+ ]
+}

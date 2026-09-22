@@ -1,0 +1,80 @@
+[
+ {
+  "id": "T1.1",
+  "description": "a small file becomes one chunk with its line range",
+  "status": "PASS",
+  "detail": "chunks=1 loc={'content': '# Title\\n\\nFirst block.\\n\\nSecond block.', 'from': 1, 'to': 6}"
+ },
+ {
+  "id": "T1.2",
+  "description": "a single oversized block is split, not truncated",
+  "status": "PASS",
+  "detail": "chunks=3 max=900"
+ },
+ {
+  "id": "T1.3",
+  "description": "no chunk exceeds the character limit",
+  "status": "PASS",
+  "detail": "chunks=6 max=898"
+ },
+ {
+  "id": "T1.4",
+  "description": "every line of the document ends up in some chunk",
+  "status": "PASS",
+  "detail": "first=1 last=400 file_lines=400"
+ },
+ {
+  "id": "T1.5",
+  "description": "chunk line ranges never go backwards",
+  "status": "PASS",
+  "detail": "6 chunks"
+ },
+ {
+  "id": "T1.6",
+  "description": "a whitespace-only file produces no chunks",
+  "status": "PASS",
+  "detail": "[]"
+ },
+ {
+  "id": "T1.7",
+  "description": "a CRLF file chunks without raising",
+  "status": "PASS",
+  "detail": "1 chunks"
+ },
+ {
+  "id": "T2.1",
+  "description": "Supabase headers carry both apikey and Authorization",
+  "status": "PASS",
+  "detail": "keys=['Authorization', 'Content-Type', 'Prefer', 'User-Agent', 'apikey']"
+ },
+ {
+  "id": "T2.2",
+  "description": "the embedding call uses the embedding key, not the service key",
+  "status": "PASS",
+  "detail": "keys=['Authorization', 'Content-Type', 'User-Agent']"
+ },
+ {
+  "id": "T2.3",
+  "description": "no header builder leaks the service key into the embedding request",
+  "status": "PASS",
+  "detail": "headers=['Authorization', 'Content-Type', 'User-Agent']"
+ },
+ {
+  "id": "T3.1",
+  "description": "--dry-run exits 0 without any network call",
+  "status": "PASS",
+  "detail": "returned 0"
+ },
+ {
+  "id": "T3.2",
+  "description": "a secrets file missing a field is refused with the field name",
+  "status": "PASS",
+  "detail": "secrets file C:\\Users\\LEOWAN~1\\AppData\\Local\\Temp\\ingest-tests-glgo68ky\\secrets-bad.json has no \"siliconflowUrl\""
+ },
+ {
+  "id": "T3.3",
+  "description": "trailing slashes are stripped from both base URLs",
+  "status": "PASS",
+  "detail": "https://x.supabase.co | https://api.siliconflow.cn/v1"
+ }
+]

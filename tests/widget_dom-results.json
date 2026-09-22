@@ -38,5 +38,15 @@
     "case": "the failure is logged to the console instead",
     "status": "PASS",
     "detail": "[support widget] Error: ECONNREFUSED"
+  },
+  {
+    "case": "an answer that contains HTML is shown as text",
+    "status": "PASS",
+    "detail": "\"<img src=x onerror=\\\"window.pwned\""
+  },
+  {
+    "case": "the answer never reaches innerHTML (nothing is parsed or executed)",
+    "status": "PASS",
+    "detail": "log.innerHTML=\"\""
   }
 ]
