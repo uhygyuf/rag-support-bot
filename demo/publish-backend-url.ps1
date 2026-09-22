@@ -51,7 +51,8 @@ $payload = [ordered]@{
   note    = 'Address of the live n8n backend for this demo page. Quick-tunnel URLs change whenever the tunnel restarts - refresh this file by running demo/publish-backend-url.ps1 on the machine that runs n8n.'
 }
 $json = ($payload | ConvertTo-Json) + "`n"
-Set-Content -Path $target -Value $json -Encoding utf8
+# UTF8 without BOM - a BOM would make some JSON readers choke, and no BOM is what the browser expects
+[System.IO.File]::WriteAllText($target, $json, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "wrote $target"
 
 Push-Location $repo
