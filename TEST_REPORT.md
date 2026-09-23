@@ -508,8 +508,14 @@ The same three changes were applied to the three channel workflows that ship in 
 (`SupportBotEmail-channel.json`, `SupportBotEmailGmail-channel.json`,
 `SupportBotTelegram-channel.json`), so no artifact still carries the single-sentence rule.
 
-One row is left over from the broken intermediate state: ticket `65` (`Do you ship to Canada?`) was
-created by the malformed gate and is not a real escalation.
+The broken intermediate version also left one row behind: ticket `65` (`Do you ship to Canada?`) was
+created by the malformed gate and is not a real escalation. The ticket table was curated on request on
+2026-09-23: `65` is gone, the test noise is gone, and the three rows that remain (`63`, `67`, `69`) are
+all handoff requests. The full table was read out to
+`D:\Tools\n8n\backup\tickets-full-backup-20260923.json` (with `tickets-deleted-20260923.json` holding
+exactly the 51 rows that were removed) before the delete, so it can be put back row for row. Note that
+`demo/demo-start.ps1` step 3 empties the whole table again on every demo run unless it is called with
+`-KeepTickets`.
 
 ---
 
