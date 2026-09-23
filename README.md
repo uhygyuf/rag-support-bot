@@ -83,6 +83,9 @@ the assistant is offline — the storefront itself never breaks.
 | **Cloudflare quick tunnel** | makes the local instance reachable for the widget/Telegram webhooks |
 | **Telegram bot** | the operator's alert channel (tickets, workflow errors, crash recovery) |
 
+What runs where (GitHub Pages, the tunnel, the workflow, the database), why each piece was chosen,
+and what the design deliberately does not have: `docs/architecture.md`.
+
 ## Channels — state and evidence
 
 | Channel | Entry point | Verified |
@@ -202,7 +205,7 @@ rag-support-bot/
 ├── switches/        bot-on.bat / bot-off.bat / bot-status.bat — start and really stop the bot
 ├── demo/            one-command demo launcher (demo-start.ps1) + the subtitle/render pipeline used
 │                    for the 60-second walkthrough video
-└── docs/            operations, setup guide, QA reports, acceptance checklist
+└── docs/            architecture, operations, setup guide, QA reports, acceptance checklist
 ```
 
 ## Scope and honest limits
