@@ -969,6 +969,34 @@
   "detail": ""
  },
  {
+  "id": "T28.9",
+  "area": "release",
+  "desc": "The switch grants itself start/stop rights once (Microsoft: the service security descriptor)",
+  "status": "PASS",
+  "detail": "rights string present: True"
+ },
+ {
+  "id": "T28.10",
+  "area": "reliability",
+  "desc": "Elevation is awaited and its output is shown, so a double-click always ends in a readable report",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.11",
+  "area": "reliability",
+  "desc": "A cancelled permission prompt is reported as such",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.12",
+  "area": "safety",
+  "desc": "The granted rights are scoped and reversible",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T14.1",
   "area": "security",
   "desc": "No secrets committed in the project tree",
@@ -999,8 +1027,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (143)",
+  "desc": "README states the real number of checks (147)",
   "status": "PASS",
-  "detail": "README says 143"
+  "detail": "README says 147"
  }
 ]

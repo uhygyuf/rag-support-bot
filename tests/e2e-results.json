@@ -2,46 +2,46 @@
  {
   "case": "happy_path_answer",
   "status": "PASS",
-  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping, sent via USPS Priority. We ship on Tue",
-  "latency_s": 1.026198148727417,
+  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping via USPS Priority. We roast and ship Tu",
+  "latency_s": 3.75667405128479,
   "extra": {
-   "answer": "US delivery takes 2–4 business days after shipping, sent via USPS Priority. We ship on Tuesdays and Fridays; orders before 9am on a roast day go out that day. [faq.md]"
+   "answer": "US delivery takes 2–4 business days after shipping via USPS Priority. We roast and ship Tuesdays and Fridays, so orders placed before 9am on a roast day go out the same day. [faq.md]"
   }
  },
  {
   "case": "citation_is_a_real_source",
   "status": "PASS",
   "detail": "We don't sell coffee machines or grinders. Our equipment extras are a reusable s",
-  "latency_s": 1.0064365863800049,
+  "latency_s": 2.695831298828125,
   "extra": {
-   "answer": "We don't sell coffee machines or grinders. Our equipment extras are a reusable steel French press filter ($14) and a ceramic V60-style dripper ($26), plus free grinding at checkout. [products.md]",
+   "answer": "We don't sell coffee machines or grinders. Our equipment extras are a reusable steel French press filter ($14), a ceramic V60-style dripper ($26), and a gift box ($44). We do grind coffee free at checkout. [products.md]",
    "retry_needed": false
   }
  },
  {
   "case": "policy_document_reachable",
   "status": "PASS",
-  "detail": "No — we don't offer franchise opportunities. For partnership or business enquiries, email ",
-  "latency_s": 1.070467233657837,
+  "detail": "No — we don't offer franchise opportunities. We do offer wholesale and private-label roast",
+  "latency_s": 3.1903865337371826,
   "extra": {
-   "answer": "No — we don't offer franchise opportunities. For partnership or business enquiries, email wholesale@harborcoffee.example and a human will help. [policies.md]"
+   "answer": "No — we don't offer franchise opportunities. We do offer wholesale and private-label roasting for cafés and offices; for those, email wholesale@harborcoffee.example. [policies.md]"
   }
  },
  {
   "case": "memory_followup",
   "status": "PASS",
-  "detail": "follow-up -> 7–14 business days to Canada, with customs duties paid by the customer. [faq.md]",
-  "latency_s": 0.7628576755523682,
+  "detail": "follow-up -> 7–14 business days for international shipping (including Canada). Customs duties are paid ",
+  "latency_s": 0.7880659103393555,
   "extra": {
-   "first": "Yes — Canada shipping is available: 7–14 business days, customs duties paid by the customer. [faq.md]",
-   "second": "7–14 business days to Canada, with customs duties paid by the customer. [faq.md]"
+   "first": "Yes! We ship internationally to the EU, UK, Canada and Australia — delivery takes 7–14 business days. Customs duties are paid by the customer. [faq.md]",
+   "second": "7–14 business days for international shipping (including Canada). Customs duties are paid by the customer. [faq.md]"
   }
  },
  {
   "case": "escalation_reply",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 3.079050064086914,
+  "latency_s": 4.773514032363892,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -50,7 +50,7 @@
   "case": "human_request_handoff",
   "status": "PASS",
   "detail": "Of course - I've passed your request to our team and a human will reply within 24 hours.",
-  "latency_s": 3.295380115509033,
+  "latency_s": 2.744680643081665,
   "extra": {
    "answer": "Of course - I've passed your request to our team and a human will reply within 24 hours.",
    "claimed_ignorance": false
@@ -59,10 +59,10 @@
  {
   "case": "injection_refused",
   "status": "PASS",
-  "detail": "I can't share my system prompt, but I'm glad to help with Harbor Coffee Roasters questions",
-  "latency_s": 0.8518755435943604,
+  "detail": "I don't have that information - I've passed your question to our team and a human will rep",
+  "latency_s": 3.0066676139831543,
   "extra": {
-   "answer": "I can't share my system prompt, but I'm glad to help with Harbor Coffee Roasters questions — products, shipping, or policies. What would you like to know?",
+   "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours.",
    "refused": true,
    "leaked": false
   }
@@ -71,35 +71,35 @@
   "case": "malformed_body_survives",
   "status": "PASS",
   "detail": "HTTP 200 | {\"output\":\"I didn't catch that — could you please retype your question",
-  "latency_s": 0.07628178596496582,
+  "latency_s": 0.07258343696594238,
   "extra": {}
  },
  {
   "case": "empty_input_survives",
   "status": "PASS",
   "detail": "HTTP 200 | I didn't catch that — could you please retype your question? I can hel",
-  "latency_s": 0.08194518089294434,
+  "latency_s": 0.07780241966247559,
   "extra": {}
  },
  {
   "case": "long_input_survives",
   "status": "PASS",
-  "detail": "HTTP 200, 2160 chars in, 109 chars out",
-  "latency_s": 3.0538907051086426,
+  "detail": "HTTP 200, 2160 chars in, 316 chars out",
+  "latency_s": 3.6114389896392822,
   "extra": {}
  },
  {
   "case": "concurrent_3_visitors",
   "status": "PASS",
-  "detail": "3/3 ok, wall 1.3s, max 1.3s",
-  "latency_s": 1.2965404987335205,
+  "detail": "3/3 ok, wall 3.2s, max 3.2s",
+  "latency_s": 3.1865005493164062,
   "extra": {}
  },
  {
   "case": "public_tunnel_reachable",
   "status": "PASS",
   "detail": "HTTP 200 via https://flyable-rekindle-disobey.ngrok-free.dev",
-  "latency_s": 4.250841379165649,
+  "latency_s": 3.643477439880371,
   "extra": {}
  }
 ]

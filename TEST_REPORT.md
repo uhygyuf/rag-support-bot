@@ -510,3 +510,80 @@ The same three changes were applied to the three channel workflows that ship in 
 
 One row is left over from the broken intermediate state: ticket `65` (`Do you ship to Canada?`) was
 created by the malformed gate and is not a real escalation.
+
+---
+
+## M. 2026-09-23 - the switches: verified, and made to stop asking
+
+The question was whether the one-click switches still work. The honest answer at the time was that
+`-Action status` had been exercised and `on` / `off` had not, and reading the code showed why that
+mattered.
+
+### What was actually wrong
+
+| Defect | Evidence |
+|---|---|
+| Every start and stop needed the administrator prompt | `Stop-Service ngrok` as this account: `Service 'ngrok (ngrok)' cannot be stopped due to the following error: Cannot open ngrok service on computer '.'`. Reading the service access list with `sc.exe sdshow` explains it: interactive users hold `CCLCSWLOCRRC` (query and read) and nothing that starts or stops |
+| The elevated window closed the instant it finished, so the window the user actually double-clicked said "The result is in the window that just opened" and then lost the evidence | `Invoke-Elevated` called `Start-Process -Verb RunAs` with no `-Wait` and wrote no log |
+| Dismissing the prompt produced an unhandled .NET exception **and** still printed that success sentence | the same code path, with `$ErrorActionPreference = 'Continue'` |
+
+### What the popular solutions do
+
+| Source | What it says |
+|---|---|
+| Microsoft Learn, *Service Security and Access Rights* | the rights are `SERVICE_START` (0x0010), `SERVICE_STOP` (0x0020), `SERVICE_CHANGE_CONFIG` (0x0002); the default service descriptor gives local users query and read, not start or stop |
+| Microsoft Learn, *How to grant users rights to manage services* | the supported method is to grant a user "Start, stop and pause" on that service |
+| Carbon (`webmd-health-services/Carbon`), `Grant-ServiceControlPermission` | grants "just the permissions needed to use PowerShell's `Stop-Service`, `Start-Service`, and `Restart-Service` cmdlets" - QueryStatus + EnumerateDependents + Start + Stop, with ChangeConfig as an explicit extra |
+| `PeterKottas/DotNetCore.WindowsService` issue #126 (568 stars, open) | the same limitation reported against a popular service library; the answer is a permission change on the service, not an application workaround |
+
+So the switch does not fight the prompt, it removes the need for it: grant the rights once on exactly
+those two services, keep the UAC route as the fallback, and never report something that did not happen.
+
+### The trap the first attempt hit, and how it was found
+
+The first grant failed with `[SC] ConvertStringSecurityDescriptorToSecurityDescriptor FAILED 1804: The
+specified datatype is invalid.` Rather than guessing, one elevated run tried six SDDL forms against the
+same service and restored the original after each:
+
+| Form | Result |
+|---|---|
+| the original descriptor, unchanged (control) | SUCCESS |
+| the new rule appended after the end of the whole descriptor | **FAILED 1804** (four different right-sets, all four failed) |
+| the same rule placed inside the `D:` section | **SUCCESS**, and it read back byte for byte |
+
+Root cause: a service descriptor has two sections, `D:` (the DACL) and `S:` (the SACL). Appending to
+the string put the new rule into the audit section, and Windows then rejects the descriptor as a whole.
+The switch now inserts the rule at the end of the DACL.
+
+### What changed
+
+| Before | Now |
+|---|---|
+| one Windows prompt on every start and stop | one prompt on the first run, then none, for ever |
+| the elevated window closed before it could be read | the elevated run is awaited, its output is printed in the window that was double-clicked, and it is kept in `switches\last-run.log` |
+| a cancelled prompt printed an exception and claimed success | a cancelled prompt says so and changes nothing |
+| no way to undo the permission | `-Action revoke` restores the saved original descriptor from `switches\service-sddl-backup.txt` |
+
+The granted rights are `SERVICE_START`, `SERVICE_STOP`, `SERVICE_QUERY_STATUS`,
+`SERVICE_ENUMERATE_DEPENDENTS` and `SERVICE_CHANGE_CONFIG`, scoped to these two services and this one
+account. Microsoft notes that `SERVICE_CHANGE_CONFIG` lets the holder repoint a service at another
+executable, which is why `switches/README.md` says so and why `revoke` exists; the account is an
+administrator anyway, so the rule removes a prompt rather than crossing a trust boundary.
+
+### Evidence
+
+| Step | Result |
+|---|---|
+| `switch-bot.ps1 -Action grant` (one prompt) | `n8n start/stop rights granted to this account (one time only)` and the same for `ngrok`; the parent window printed the elevated output |
+| `switch-bot.ps1 -Action status` | `the switch  needs no permission prompt` |
+| `switch-bot.ps1 -Action off` **without** elevation | `ngrok Stopped (will not start by itself any more)`, `n8n Stopped ...`, `the bot is off: nothing answers on port 5678`; `Get-Service` confirms `Stopped / Disabled` for both; `127.0.0.1:5678/healthz -> 000`, the public address `-> 404` (the ngrok edge has no agent) |
+| `bot-on.bat` **without** elevation (the real double-click path) | both services `Running`, n8n answering, tunnel online, `published page points at the live tunnel`, `the bot now answers` |
+| a question through the permanent address afterwards | `200`, the answer cited `[faq.md]` |
+| `bot-status.bat` | read-only report, still needs no rights |
+
+### Re-test
+
+| Command | Result |
+|---|---|
+| `python tests/qa_suite.py` | 147 checks, 0 failed (was 143: `T28.9` grant once, `T28.10` awaited elevation with readable output, `T28.11` cancelled prompt reported, `T28.12` scoped and reversible) |
+| `python tests/e2e_live.py --tunnel https://flyable-rekindle-disobey.ngrok-free.dev` | 12/12 passed |

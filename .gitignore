@@ -39,3 +39,7 @@ demo/compose_*.py
 demo/refine_*.py
 demo/fetch_*.py
 demo/video/_*.png
+
+# runtime state of the switches (machine specific, written by switch-bot.ps1)
+switches/last-run.log
+switches/service-sddl-backup.txt

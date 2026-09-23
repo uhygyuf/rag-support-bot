@@ -714,6 +714,23 @@ def test_switches():
     check("T28.8", "release", "The republish step is gone from the repository",
           not os.path.exists(os.path.join(ROOT, "demo", "publish-backend-url.ps1")))
 
+    # A switch that needs a UAC prompt every single time is a switch that fails in real use: the
+    # prompt gets missed, or the elevated window closes before anything can be read. The switch now
+    # grants itself the rights Microsoft documents for this, once, and shows the result afterwards.
+    check("T28.9", "release", "The switch grants itself start/stop rights once "
+                              "(Microsoft: the service security descriptor)",
+          "sc.exe sdset" in ps and "Grant-Control" in ps and "Revoke-Control" in ps
+          and "DCLCSWRPWP" in ps,
+          "rights string present: %s" % ("DCLCSWRPWP" in ps))
+    check("T28.10", "reliability", "Elevation is awaited and its output is shown, so a double-click "
+                                   "always ends in a readable report",
+          "-Wait" in ps and "Show-Log" in ps and "last-run.log" in ps
+          and "result is in the window that just opened" not in ps)
+    check("T28.11", "reliability", "A cancelled permission prompt is reported as such",
+          "was cancelled" in ps and "1223" in ps)
+    check("T28.12", "safety", "The granted rights are scoped and reversible",
+          "service-sddl-backup" in ps and "WriteOwner" not in ps and "SeTakeOwnership" not in ps)
+
 
 def main():
     ap = argparse.ArgumentParser()
