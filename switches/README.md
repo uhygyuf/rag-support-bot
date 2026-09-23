@@ -1,27 +1,34 @@
 # Switches — start and really stop the bot
 
-Two files you double-click. Nothing else in this folder is needed for daily use.
+Two files you double-click. They control the two Windows services the demo runs as:
+
+| Service | What it is |
+|---|---|
+| `n8n` | the workflow server, listening on `127.0.0.1:5678` |
+| `ngrok` | the tunnel that publishes that port under the permanent hostname `flyable-rekindle-disobey.ngrok-free.dev` |
 
 | Double-click | What it does |
 |---|---|
-| **`bot-on.bat`** | Leaves the self-healing task enabled, starts n8n and the public tunnel if needed, checks the tunnel from the outside and only replaces it when the edge does not answer at all (a tunnel whose service is merely still booting is waited for), restarts n8n when the address changed so it knows the new one, refreshes the address the hosted page reads, and reports what is actually up |
-| **`bot-off.bat`** | Disables the self-healing task **first**, then stops n8n and the tunnel |
-| `bot-status.bat` | Reports the state and changes nothing (useful before a demo) |
+| **`bot-on.bat`** | sets both services to Automatic and starts them, waits until n8n really answers, then checks the public address from the outside and reports what is up |
+| **`bot-off.bat`** | stops both services **and** sets them to Disabled, so a reboot does not bring the demo back on its own |
+| `bot-status.bat` | reports the state and changes nothing (read only, no administrator rights needed) |
 
-## Why stopping is two steps, not one
+Starting and stopping a service needs administrator rights, so `bot-on.bat` and `bot-off.bat` trigger
+one Windows prompt and then do the work in the elevated window. `bot-status.bat` never does.
 
-The scheduled task `n8n watchdog` restarts n8n within about five minutes whenever it is missing —
-that is the self-healing that keeps the demo alive through crashes. It also means "stop n8n" alone is
-not "stop the bot": the service would be back before you finished closing the window. `bot-off.bat`
-therefore disables the task and stops the service, in that order, and verifies both afterwards.
+## Why nothing has to be refreshed any more
+
+The page reads `site/backend.json`, which names the tunnel hostname. That hostname belongs to the
+account and is written in `D:\Tools\ngrok\ngrok.yml`, so it is the same after a restart, a crash or a
+reboot. There is no republish step, and no watchdog script either: Windows starts both services at
+boot and restarts them if they stop.
 
 ## What a visitor sees in each state
 
 | State | The published page (`https://uhygyuf.github.io/rag-support-bot/`) |
 |---|---|
 | On | Loads, and the chat answers with the source file named, e.g. `… 7–14 business days. [faq.md]` |
-| On, but the tab was open while the tunnel restarted | The first question retries against a freshly looked-up address and still answers; no reload needed |
-| Off | Still loads — GitHub hosts it — but a question gets `Sorry, our assistant is offline right now.` |
+| Off, or the machine is asleep | Still loads — GitHub hosts it — but a question gets `Sorry, our assistant is offline right now.` |
 
 The page itself never depends on this machine being switched on; only the answering does.
 
@@ -35,16 +42,19 @@ looks clean on camera. Use `start-demo.bat -KeepTickets` if you do not want that
 
 | Symptom | What to do |
 |---|---|
-| The status says the published page is `STALE` | Run `bot-on.bat`: it republishes the current address (the tunnel gets a new hostname whenever it restarts, and the page reads the address from the repository) |
-| "the tunnel still does not answer" | Run `bot-on.bat` again; quick tunnels occasionally need a second attempt. If it fails twice, run `D:\Tools\n8n\start-public.bat`, read its window, then run the switch again |
-| "n8n did not answer within 4 minutes" | Open the minimised `n8n public (Cloudflare tunnel)` window and read the error |
-| You want the bot up but not reachable from the internet | Double-click `D:\Tools\n8n\start-n8n.bat` instead (local only, no tunnel) |
+| The status says the n8n service is not answering | `services.msc` → **n8n support bot** → Restart. Its output is in `D:\Tools\n8n\logs\n8n-service.*.log` |
+| The status says the public tunnel does not answer | `services.msc` → **ngrok** → Restart. Its config is `D:\Tools\ngrok\ngrok.yml` |
+| Opening the public address in a browser shows an ngrok notice page | Expected on the free plan: click through it. The demo page never sees it, because the widget sends a JSON POST |
+| You want n8n up but not reachable from the internet | Run `D:\Tools\n8n\start-n8n.bat` by hand (local only, no tunnel) |
+| The status says the published page points somewhere else | `site/backend.json` and `D:\Tools\ngrok\ngrok.yml` disagree. Fix whichever is wrong, then run `bot-status.bat` again |
 
 ## How these scripts know where things are
 
-Paths and task names are the defaults of this installation (`D:\Tools\n8n`, tasks
-`n8n watchdog` / `n8n zombie cleanup`). The tunnel executable, its arguments and the log path are
-read from `D:\Tools\n8n\watchdog-config.json`, so there is one place to change them.
+The switch itself knows two service names and one hostname; all three are constants at the top of
+`switch-bot.ps1`. The service definitions live outside the repository, in the tool folders:
+
+- `D:\Tools\n8n\service\n8n-service.xml` (WinSW wrapper for n8n)
+- `D:\Tools\ngrok\ngrok.yml` (hostname, port, authtoken)
 
 Commands, if you prefer a terminal:
 

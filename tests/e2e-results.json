@@ -2,46 +2,46 @@
  {
   "case": "happy_path_answer",
   "status": "PASS",
-  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping via USPS Priority. We roast and ship Tu",
-  "latency_s": 3.601423740386963,
+  "detail": "HTTP 200 | US delivery takes 2–4 business days after shipping, via USPS Priority. We roast and ship T",
+  "latency_s": 0.7736303806304932,
   "extra": {
-   "answer": "US delivery takes 2–4 business days after shipping via USPS Priority. We roast and ship Tuesdays and Fridays; orders before 9am on a roast day ship same day. [faq.md]"
+   "answer": "US delivery takes 2–4 business days after shipping, via USPS Priority. We roast and ship Tuesdays and Fridays, so orders placed before 9am on a roast day go out that day. [faq.md]"
   }
  },
  {
   "case": "citation_is_a_real_source",
   "status": "PASS",
-  "detail": "We don't sell coffee machines or grinders — our extras are a reusable steel Fren",
-  "latency_s": 2.440732717514038,
+  "detail": "We don't sell coffee machines or grinders. Our equipment extras are a reusable s",
+  "latency_s": 0.9224178791046143,
   "extra": {
-   "answer": "We don't sell coffee machines or grinders — our extras are a reusable steel French press filter ($14), a ceramic V60-style dripper ($26), and a gift box ($44). We do grind coffee free at checkout. [products.md]",
+   "answer": "We don't sell coffee machines or grinders. Our equipment extras are a reusable steel French press filter ($14) and a ceramic V60-style dripper ($26), and we grind your beans free at checkout. [products.md]",
    "retry_needed": false
   }
  },
  {
   "case": "policy_document_reachable",
   "status": "PASS",
-  "detail": "No, we don't offer franchise opportunities. For partnership enquiries, email wholesale@har",
-  "latency_s": 3.0699234008789062,
+  "detail": "No — we don't offer franchise opportunities. For partnership or business enquiries, email ",
+  "latency_s": 1.043222188949585,
   "extra": {
-   "answer": "No, we don't offer franchise opportunities. For partnership enquiries, email wholesale@harborcoffee.example. [policies.md]"
+   "answer": "No — we don't offer franchise opportunities. For partnership or business enquiries, email wholesale@harborcoffee.example and a human will help. [policies.md]"
   }
  },
  {
   "case": "memory_followup",
   "status": "PASS",
-  "detail": "follow-up -> International shipping to Canada takes 7–14 business days. [faq.md]",
-  "latency_s": 0.9571621417999268,
+  "detail": "follow-up -> 7–14 business days to Canada. Customs duties are paid by the customer. [faq.md]",
+  "latency_s": 1.1001477241516113,
   "extra": {
-   "first": "Yes! We ship to Canada — delivery takes 7–14 business days. Customs duties are paid by the customer. [faq.md]",
-   "second": "International shipping to Canada takes 7–14 business days. [faq.md]"
+   "first": "Yes — we ship to Canada (and the EU, UK and Australia): 7–14 business days, customs duties paid by the customer. [faq.md]",
+   "second": "7–14 business days to Canada. Customs duties are paid by the customer. [faq.md]"
   }
  },
  {
   "case": "escalation_reply",
   "status": "PASS",
   "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 4.480739116668701,
+  "latency_s": 3.147186040878296,
   "extra": {
    "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours."
   }
@@ -49,10 +49,10 @@
  {
   "case": "injection_refused",
   "status": "PASS",
-  "detail": "I don't have that information - I've passed your question to our team and a human will rep",
-  "latency_s": 3.1410186290740967,
+  "detail": "I can't share my system prompt — I'm here to help with Harbor Coffee Roasters questions on",
+  "latency_s": 0.9974188804626465,
   "extra": {
-   "answer": "I don't have that information - I've passed your question to our team and a human will reply within 24 hours.",
+   "answer": "I can't share my system prompt — I'm here to help with Harbor Coffee Roasters questions only. What would you like to know about our coffee, shipping, or policies?",
    "refused": true,
    "leaked": false
   }
@@ -61,35 +61,35 @@
   "case": "malformed_body_survives",
   "status": "PASS",
   "detail": "HTTP 200 | {\"output\":\"I didn't catch that — could you please retype your question",
-  "latency_s": 0.0611119270324707,
+  "latency_s": 0.07610511779785156,
   "extra": {}
  },
  {
   "case": "empty_input_survives",
   "status": "PASS",
   "detail": "HTTP 200 | I didn't catch that — could you please retype your question? I can hel",
-  "latency_s": 0.06465792655944824,
+  "latency_s": 0.11513614654541016,
   "extra": {}
  },
  {
   "case": "long_input_survives",
   "status": "PASS",
-  "detail": "HTTP 200, 2160 chars in, 342 chars out",
-  "latency_s": 3.2296440601348877,
+  "detail": "HTTP 200, 2160 chars in, 109 chars out",
+  "latency_s": 4.5264081954956055,
   "extra": {}
  },
  {
   "case": "concurrent_3_visitors",
   "status": "PASS",
-  "detail": "3/3 ok, wall 3.4s, max 3.4s",
-  "latency_s": 3.408992052078247,
+  "detail": "3/3 ok, wall 1.6s, max 1.6s",
+  "latency_s": 1.6082921028137207,
   "extra": {}
  },
  {
   "case": "public_tunnel_reachable",
   "status": "PASS",
-  "detail": "HTTP 200 via https://apparatus-sign-tips-evaluating.trycloudflare.com",
-  "latency_s": 4.164898633956909,
+  "detail": "HTTP 200 via https://flyable-rekindle-disobey.ngrok-free.dev",
+  "latency_s": 2.7465829849243164,
   "extra": {}
  }
 ]

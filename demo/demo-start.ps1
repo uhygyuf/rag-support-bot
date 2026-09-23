@@ -35,10 +35,10 @@ $ErrorActionPreference = 'SilentlyContinue'
 
 $projectRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $page        = Join-Path $projectRoot 'site\index.html'
-$startPublic = 'D:\Tools\n8n\start-public.bat'
-$stopPublic  = 'D:\Tools\n8n\stop-public.bat'
-$urlFile     = 'D:\Tools\n8n\public-url.txt'
-$secretsPath = 'D:\Tools\n8n\demo-secrets.json'
+$switchScript = Join-Path $projectRoot 'switches\switch-bot.ps1'
+$backendFile  = Join-Path $projectRoot 'site\backend.json'
+$publicUrl    = 'https://flyable-rekindle-disobey.ngrok-free.dev'
+$secretsPath  = 'D:\Tools\n8n\demo-secrets.json'
 
 function Say([string]$m, [string]$c = 'Gray') { Write-Host $m -ForegroundColor $c }
 function Head([string]$m) { Write-Host ''; Write-Host $m -ForegroundColor Cyan }
@@ -49,8 +49,13 @@ function Test-N8n {
     } catch { return $false }
 }
 function Get-PublicUrl {
-    if (Test-Path -LiteralPath $urlFile) { return (Get-Content -LiteralPath $urlFile -Raw).Trim() }
-    return ''
+    # The address is permanent now, so read the same file the hosted page reads.
+    if (Test-Path -LiteralPath $backendFile) {
+        try {
+            return ([string]((Get-Content -LiteralPath $backendFile -Raw | ConvertFrom-Json).webhook) -replace '/webhook/.*$', '')
+        } catch { }
+    }
+    return $publicUrl
 }
 function Test-PublicOnline([string]$url) {
     if (-not $url) { return $false }
@@ -107,13 +112,16 @@ Head '[1/4]  n8n service'
 if (Test-N8n) {
     Say '      already running on http://127.0.0.1:5678' Green
 } else {
-    Say '      not running - starting n8n in public mode (tunnel + WEBHOOK_URL)' Yellow
-    if (-not (Test-Path -LiteralPath $startPublic)) {
-        Say "      ERROR: $startPublic not found - start n8n manually and rerun." Red
+    Say '      not running - starting the two services the demo runs as' Yellow
+    if (-not (Test-Path -LiteralPath $switchScript)) {
+        Say "      ERROR: $switchScript not found - start the bot with switches\bot-on.bat and rerun." Red
         Read-Host 'press enter to exit' | Out-Null
         exit 1
     }
-    Start-Process -FilePath $startPublic -WindowStyle Minimized | Out-Null
+    # The switch asks for administrator rights by itself in a separate window; this script only
+    # waits for the port to answer.
+    Start-Process -FilePath 'powershell' -WindowStyle Minimized -ArgumentList @(
+        '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $switchScript, '-Action', 'on') | Out-Null
     $ready = $false
     for ($i = 1; $i -le 36; $i++) {
         Start-Sleep -Seconds 5
@@ -132,8 +140,7 @@ if ($url -and (Test-PublicOnline $url)) {
 } else {
     Say '      tunnel is not answering - the Telegram notification will NOT fire live.' Yellow
     Say '      options:' Yellow
-    Say '        * the "n8n watchdog" task repairs this within ~5 min:' DarkGray
-    Say '            powershell -File D:\Tools\n8n\watchdog-n8n.ps1 -Config D:\Tools\n8n\watchdog-config.json' DarkGray
+    Say '        * services.msc: restart the "ngrok" service (its config is D:\Tools\ngrok\ngrok.yml)' DarkGray
     Say '        * or film that shot from the alert already in the Telegram bot chat (message_id 35/36)' DarkGray
 }
 
@@ -204,5 +211,5 @@ Say '   n8n editor      : http://127.0.0.1:5678   (workflow must be Published)'
 Say '   tickets table   : Supabase dashboard -> Table editor -> tickets'
 Say ''
 Say '   record with Win+Alt+R (Xbox Game Bar). When you are done:'
-Say "     stop the tunnel/instance:  $stopPublic"
+Say "     stop the whole bot:        switches\bot-off.bat  (stops the n8n and ngrok services)"
 Say ''

@@ -1,8 +1,11 @@
 @echo off
 rem ============================================================
 rem  Start the Harbor support bot.
-rem  Enables the self-healing task, starts n8n (+ the public
-rem  tunnel) if needed and reports what is up.
+rem  Turns on the two Windows services the demo runs as:
+rem    n8n    - the workflow server
+rem    ngrok  - the tunnel with the permanent hostname
+rem  Asks for administrator rights (one Windows prompt), then
+rem  reports whether the bot really answers.
 rem  The real work is in switch-bot.ps1 next to this file.
 rem ============================================================
 title Support bot - ON

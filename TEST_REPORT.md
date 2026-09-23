@@ -385,3 +385,64 @@ the tunnel is genuinely down, not that the switch failed. The switch is still a 
 unattended path is the watchdog, which now closes the same gap within about a minute instead of a
 scan interval. Nothing here changes the standing limitation that the assistant answers only while
 this machine is awake.
+
+---
+
+## K. 2026-09-23 - the address-chasing machinery is gone
+
+Section J fixed three defects inside the self-healing design. This section removes the design, which
+is what those defects were symptoms of.
+
+The question that decided it: how do the products this project is modelled on (n8n plus a tunnel on
+one machine) solve "the public address changed again"? They do not solve it, because they never have
+the problem. The address is fixed, and the operating system owns the processes.
+
+| Before | Now |
+|---|---|
+| Cloudflare quick tunnel, random hostname on every start | ngrok agent as a Windows service, hostname `flyable-rekindle-disobey.ngrok-free.dev` written in `D:\Tools\ngrok\ngrok.yml` |
+| n8n started by a scheduled task that ran a `.bat` in a console window | n8n under a WinSW service wrapper, service name `n8n support bot` |
+| watchdog task every 5 minutes: detect a dead tunnel, start a fresh one, restart n8n with the new URL, rewrite `public-url.txt`, run the publish hook | not needed: Windows restarts a service that stops, and the address it publishes never changes |
+| `demo/publish-backend-url.ps1` committed `site/backend.json` whenever the address moved | `site/backend.json` written once and never again |
+
+Removed from this repository: `demo/publish-backend-url.ps1`, `demo/publish-backend-url.bat`.
+Removed from the machine: the `n8n watchdog` scheduled task, the deployed watchdog script, its config,
+its log, its hook state file, `public-url.txt`, and the `cloudflared` client. Kept on purpose: the n8n
+workflow database, the knowledge base, the hosted page, every test suite, the QA reports, and the
+`n8n zombie cleanup` task (it only looks at console windows, which is what the manual local launcher
+still creates). The generic watchdog stays alive as a public repository,
+`github.com/uhygyuf/service-tunnel-watchdog`, which is the honest home for keeping a moving address
+alive.
+
+### Evidence measured on this machine
+
+| What | Result |
+|---|---|
+| The hostname does not change | Two consecutive agent starts both announced `https://flyable-rekindle-disobey.ngrok-free.dev` |
+| The public address carries a real request | `POST https://flyable-rekindle-disobey.ngrok-free.dev/webhook/b45b0144-.../chat` returned `200` with the answer citing `[faq.md]`, `Access-Control-Allow-Origin: https://uhygyuf.github.io` |
+| n8n lost nothing in the move | After the service migration the same question still answered from `products.md`, which only exists in the existing workflow database |
+| Both processes are supervised | `n8n support bot` and `ngrok`: `Running`, start type `Automatic` |
+| The switches tell the truth | `switches\bot-status.bat` reported both services running, the public address answering, and `published page points at the live tunnel` |
+| The page and the tunnel agree | `site/backend.json` holds the same hostname the agent announces |
+
+### Re-test after the migration
+
+| Command | Result |
+|---|---|
+| `python tests/qa_suite.py` | 139 checks, 0 failed |
+| `node tests/widget_dom_test.js` | 12 cases, 0 failed |
+| `python tests/e2e_live.py --tunnel https://flyable-rekindle-disobey.ngrok-free.dev` | 11/11 passed, median latency 1.0 s, max 4.5 s |
+| `powershell -File switches/switch-bot.ps1 -Action status` | read-only report as above; no administrator rights needed |
+
+### One test-side fix, no product change
+
+`injection_refused` failed on wording alone in the first run of this pass. The model answered the
+injection attempt with "I can only help with questions about Harbor Coffee Roasters products,
+shipping, and policies." That is a correct refusal and `leaked` was `false`, but the check only knew
+phrases like "can't share". The pattern list now also accepts a scope refusal (`can only help`,
+`only help with`). Nothing in the workflow changed.
+
+### Standing limits, restated
+
+Availability is still bounded by this machine being awake or asleep. The address survives updates,
+crashes and reboots; the host does not. The chat webhook is still reachable by anyone who knows the
+hostname, so the tunnel is meant to be stopped when the demo is not in use.

@@ -19,10 +19,10 @@ policies in `knowledge/` are the only facts the bot is allowed to use.
 | Email | write to the demo mailbox's `+support` alias — the bot answers inside the customer's thread |
 | Telegram | `@HarborSupport_bot` |
 
-The hosted page finds its backend at runtime through `site/backend.json`, which holds the current
-tunnel address; refresh it with `demo/publish-backend-url.ps1` (it refuses to publish an address that
-does not answer). While the machine that runs n8n is off, the page still loads and the widget says
-the assistant is offline — the storefront itself never breaks.
+The hosted page finds its backend at runtime through `site/backend.json`, which holds the tunnel
+hostname. That hostname is permanent — it is the account's tunnel name, set in
+`D:\Tools\ngrok\ngrok.yml` — so nothing has to be republished. While the machine that runs n8n is off,
+the page still loads and the widget says the assistant is offline; the storefront itself never breaks.
 
 ---
 
@@ -80,7 +80,7 @@ the assistant is offline — the storefront itself never breaks.
 | **DeepSeek** (OpenAI-compatible) | the conversational model behind the agent |
 | **Supabase pgvector** | knowledge base (`documents`) and the ticket queue (`tickets`) |
 | **SiliconFlow bge-m3** | embeddings for ingestion and for the query |
-| **Cloudflare quick tunnel** | makes the local instance reachable for the widget/Telegram webhooks |
+| **ngrok** (permanent hostname) | makes the local instance reachable for the widget and the Telegram webhooks; runs as a Windows service |
 | **Telegram bot** | the operator's alert channel (tickets, workflow errors, crash recovery) |
 
 What runs where (GitHub Pages, the tunnel, the workflow, the database), why each piece was chosen,
@@ -99,12 +99,12 @@ and what the design deliberately does not have: `docs/architecture.md`.
 
 | Suite | What it covers | Last run |
 |---|---|---|
-| `tests/qa_suite.py` | **138 static + contract checks** (workflow shape 29, channels 23, reliability 18, UX 10, a11y 10, integration 10, safety 10, content 8, release 9, docs 5, security 4, quality 2) — no network, no writes | 138 / 138 PASS |
-| `tests/widget_dom_test.js` | 10 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n), its offline behaviour and its refusal to render an answer as HTML, in a stubbed DOM | 10 / 10 PASS |
+| `tests/qa_suite.py` | **139 static + contract checks** (workflow shape 29, channels 23, reliability 18, ux 10, a11y 10, integration 10, safety 10, release 10, content 8, docs 5, security 4, quality 2) — no network, no writes | 139 / 139 PASS |
+| `tests/widget_dom_test.js` | 12 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n), its offline behaviour, its retry after a stale address, and its refusal to render an answer as HTML, in a stubbed DOM | 12 / 12 PASS |
 | `tests/test_ingest.py` | 13 offline cases for the loader: chunk boundaries, an oversized block, CRLF, a whitespace-only file, and the rule that the two APIs never share headers | 13 / 13 PASS |
 | `tests/kb_live_check.py` | reads the live knowledge base and compares it with `knowledge/`: every chunk names a file, every file is loaded, no stray source, chunk counts match the plan (needs credentials; skipped without them) | 5 / 5 PASS |
 | `tests/e2e_live.py` | **11 live cases** against a running instance: `happy_path_answer`, `citation_is_a_real_source`, `policy_document_reachable`, `memory_followup`, `escalation_reply`, `injection_refused`, `malformed_body_survives`, `empty_input_survives`, `long_input_survives`, `concurrent_3_visitors`, `public_tunnel_reachable` | 11 / 11 PASS |
-| crash recovery + out-of-band alert | watchdog script in `D:\Tools\n8n\` (scheduled task, every 5 min); verified by inducing both failures on purpose — kill n8n + tunnel, and a tunnel that is connected but unreachable at the edge | both repaired automatically, alerts `message_id` 35 / 36 |
+| crash recovery | both processes are Windows services (`n8n support bot` under a WinSW wrapper, `ngrok` with recovery options); Windows starts them at boot and restarts them on failure | services come back, `bot-status.bat` reports them running, the public address answers again (evidence in `docs/operations.md` §5) |
 
 Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.
 
@@ -147,11 +147,11 @@ Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.
 
 | I want to… | Do this |
 |---|---|
-| **Start the bot** (service + tunnel + page address) | double-click **`switches\bot-on.bat`** — verifies the service and the tunnel and republishes the address if the tunnel changed |
-| **Really stop it** | double-click **`switches\bot-off.bat`** — disables the self-healing task first, then stops n8n and the tunnel. Stopping n8n alone is not enough: the task restarts it within ~5 minutes |
+| **Start the bot** (the two services) | double-click **`switches\bot-on.bat`** — sets n8n and ngrok to Automatic, starts them, waits until n8n answers, then checks the public address |
+| **Really stop it** | double-click **`switches\bot-off.bat`** — stops both services and sets them to Disabled, so a reboot does not bring the demo back |
 | Check the state without changing anything | `switches\bot-status.bat` |
 | Start everything and open the demo page (clears QA tickets) | double-click `start-demo.bat` (add `-KeepTickets` to keep them) |
-| Start only n8n, no public access | `D:\Tools\n8n\start-n8n.bat` (keep the "n8n server" window open) |
+| Start only n8n, no public access | stop the services (`bot-off.bat`), then `D:\Tools\n8n\start-n8n.bat` (keep the "n8n server" window open) |
 | Open the bot editor | browser → `http://127.0.0.1:5678` → workflow **Support Bot (RAG) — full** |
 | Check whether n8n is up | `curl -s -o NUL -w "%{http_code}" http://127.0.0.1:5678/healthz` → `200` = up, `000` = down (20–60 s to boot) |
 
@@ -159,13 +159,13 @@ Details, and what a visitor sees in each state: `switches/README.md`.
 
 ## Operations
 
-Two mechanisms watch the instance while the machine is on (neither starts anything at boot — the
-service exists while the machine is running, by design):
+Both processes are Windows services now, so the operating system keeps them alive:
 
 | Mechanism | What it does |
 |---|---|
-| scheduled task **"n8n watchdog"** (every 5 min) | if the tunnel died or stopped answering, starts a fresh tunnel and restarts n8n with the new public URL; if n8n itself is down, starts it again; sends its own Telegram alert (n8n cannot report its own death), rate-limited to one reminder per hour |
-| scheduled task **"n8n zombie cleanup"** (every 15 min) | kills leftover launcher windows that no longer keep n8n or the tunnel alive |
+| Windows service **n8n support bot** (WinSW wrapper, Automatic) | starts n8n at boot and restarts it after a failure (10 s / 30 s / 60 s backoff, counter reset after an hour without failures) |
+| Windows service **ngrok** (Automatic, recovery options set by its installer) | starts the tunnel at boot and restarts it if it stops; the hostname lives in `ngrok.yml`, so it never changes |
+| scheduled task **"n8n zombie cleanup"** (every 15 min) | legacy janitor for the manual `n8n-serve.bat` path; silent while the services run |
 
 Built-in resilience (covered by tests `T16.x` / `T17.x`):
 
@@ -210,8 +210,8 @@ rag-support-bot/
 
 ## Scope and honest limits
 
-- **Runs on one laptop.** Availability is bounded by the machine being awake; quick-tunnel URLs
-  change on every restart.
+- **Runs on one laptop.** Availability is bounded by the machine being awake. The address itself is
+  permanent, so uptime is the only thing that limits the demo.
 - **No ticket UI.** The Supabase `tickets` table *is* the queue; a dashboard is not built.
 - **The chat endpoint is unauthenticated** while the tunnel is up — anyone with the URL can consume
   the configured model quota. The tunnel is meant to be stopped when not in use.

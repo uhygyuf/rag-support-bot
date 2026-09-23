@@ -667,21 +667,27 @@ def test_switches():
     ps = read(ps1)
     check("T28.2", "release", "Each launcher calls the switch script with its own action",
           "-Action on" in read(on_bat) and "-Action off" in read(off_bat))
-    check("T28.3", "reliability", "Stopping disables the self-healing task first, so the bot "
-                                  "cannot come back on its own",
-          "schtasks.exe /change" in ps and "'/disable'" in ps
-          and "n8n watchdog" in ps and "n8n zombie cleanup" in ps)
+    check("T28.3", "reliability", "Stopping disables the services, so the bot cannot come back "
+                                  "on its own after a reboot",
+          "Set-Service" in ps and "Disabled" in ps
+          and "functions: n8n, ngrok" not in ps
+          and all(s in ps for s in ("'n8n'", "'ngrok'")))
     check("T28.4", "safety", "The switches never read credentials or touch the database",
           "demo-secrets" not in ps and "rest/v1" not in ps and "DELETE" not in ps.replace(
               "Stop-Process", ""))
-    check("T28.5", "release", "Starting verifies the tunnel answers before it claims success",
-          "function Wait-Tunnel" in ps and "function Test-Tunnel" in ps
+    check("T28.5", "release", "Starting waits for the service, then verifies the public address "
+                              "before it claims success",
+          "function Wait-Service" in ps and "function Test-Tunnel" in ps
           and "NOT fully up" in ps)
-    check("T28.6", "release", "The published address is refreshed when the tunnel changes",
-          "publish-backend-url.ps1" in ps and "Publish-Backend" in ps)
+    check("T28.6", "release", "The address is permanent, so nothing republishes it",
+          "publish-backend-url" not in ps and "public-url" not in ps
+          and "ngrok-free.dev" in ps
+          and "ngrok-free.dev" in read(os.path.join(ROOT, "site", "backend.json")))
     check("T28.7", "docs", "The README points at the switches",
           any(s in read(os.path.join(ROOT, "README.md"))
               for s in ("switches/bot-on.bat", "switches\\bot-on.bat")))
+    check("T28.8", "release", "The republish step is gone from the repository",
+          not os.path.exists(os.path.join(ROOT, "demo", "publish-backend-url.ps1")))
 
 
 def main():

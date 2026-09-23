@@ -445,7 +445,7 @@
   "area": "integration",
   "desc": "hosted backend.json points at a chat webhook",
   "status": "PASS",
-  "detail": "https://latex-teens-quantum-shipped.trycloudflare.com/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
+  "detail": "https://flyable-rekindle-disobey.ngrok-free.dev/webhook/b45b0144-db0e-41f0-bef0-380d3d675f2c/chat"
  },
  {
   "id": "T12.1",
@@ -898,7 +898,7 @@
  {
   "id": "T28.3",
   "area": "reliability",
-  "desc": "Stopping disables the self-healing task first, so the bot cannot come back on its own",
+  "desc": "Stopping disables the services, so the bot cannot come back on its own after a reboot",
   "status": "PASS",
   "detail": ""
  },
@@ -912,14 +912,14 @@
  {
   "id": "T28.5",
   "area": "release",
-  "desc": "Starting verifies the tunnel answers before it claims success",
+  "desc": "Starting waits for the service, then verifies the public address before it claims success",
   "status": "PASS",
   "detail": ""
  },
  {
   "id": "T28.6",
   "area": "release",
-  "desc": "The published address is refreshed when the tunnel changes",
+  "desc": "The address is permanent, so nothing republishes it",
   "status": "PASS",
   "detail": ""
  },
@@ -927,6 +927,13 @@
   "id": "T28.7",
   "area": "docs",
   "desc": "The README points at the switches",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T28.8",
+  "area": "release",
+  "desc": "The republish step is gone from the repository",
   "status": "PASS",
   "detail": ""
  },
@@ -961,8 +968,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (138)",
+  "desc": "README states the real number of checks (139)",
   "status": "PASS",
-  "detail": "README says 138"
+  "detail": "README says 139"
  }
 ]

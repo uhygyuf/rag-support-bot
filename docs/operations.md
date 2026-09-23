@@ -4,23 +4,31 @@ How to run, expose and monitor this bot. Written for whoever operates the instan
 
 ---
 
-## 1. The three start/stop modes
+## 1. The two services, and the switches that drive them
 
-| Mode | What you double-click | What you get | When to use it |
-|---|---|---|---|
-| **Local** | `%LOCALAPPDATA%\n8n\n8n-serve.bat` | editor + site widget on `http://127.0.0.1:5678` only | building, testing |
-| **Public** | `D:\Tools\n8n\start-public.bat` | the same, plus a public HTTPS URL through a Cloudflare quick tunnel | Telegram channel, demo to a client, testing from a phone |
-| **Stop** | `D:\Tools\n8n\stop-public.bat` | stops n8n **and** the tunnel | end of session |
+The demo runs as two Windows services. Both start with Windows and are restarted by Windows if they
+stop, so there is no watchdog script, no scheduled repair task and no address to refresh.
 
-`start-public.bat` does three things: starts `cloudflared`, waits for the assigned
-`https://<random>.trycloudflare.com` address, then starts n8n **with `WEBHOOK_URL` set to that
-address**. That environment variable is what makes n8n tell Telegram (and any other webhook
-provider) the right public callback URL.
+| Service | What it is | Where it is defined |
+|---|---|---|
+| **n8n support bot** | the workflow server on `http://127.0.0.1:5678` | `D:\Tools\n8n\service\n8n-service.xml` (WinSW wrapper around `node ...\n8n start`) |
+| **ngrok** | the tunnel that publishes that port under the permanent hostname `flyable-rekindle-disobey.ngrok-free.dev` | `D:\Tools\ngrok\ngrok.yml` |
 
-**Why it matters:** without `WEBHOOK_URL`, n8n writes `http://127.0.0.1:5678/...` into Telegram's
-webhook registration. Telegram then refuses to deliver and answers `Bad Request: bad webhook: An
-HTTPS URL must be provided for webhook`. That failure is invisible from the browser — it only shows
-up in Telegram's API or through the error-alert workflow.
+| What you double-click | What you get | When to use it |
+|---|---|---|
+| `switches\bot-on.bat` | both services set to Automatic and started; waits until n8n really answers, then verifies the public address from the outside | before a demo |
+| `switches\bot-off.bat` | both services stopped **and** set to Disabled, so a reboot does not bring the demo back | end of session |
+| `switches\bot-status.bat` | a report; changes nothing and needs no administrator rights | any time |
+
+`WEBHOOK_URL` belongs to the service definition and points at the permanent hostname. That variable is
+what makes n8n tell Telegram (and any other webhook provider) the right public callback URL. Without
+it n8n registers `http://127.0.0.1:5678/...` and Telegram refuses with
+`Bad Request: bad webhook: An HTTPS URL must be provided for webhook`. That failure is invisible from
+the browser — it only shows up in Telegram's API or through the error-alert workflow.
+
+A local-only run is still possible: stop the services (`bot-off.bat`), then start
+`D:\Tools\n8n\n8n-serve.bat` by hand. It runs n8n on `127.0.0.1:5678` without the tunnel, which is
+what the build and test loop uses.
 
 ### Recording a demo (one command)
 
@@ -126,43 +134,38 @@ The page no longer hardcodes a backend. `site/widget.js` resolves its target in 
 2. `site/backend.json` — the live tunnel address sitting next to the page (what the hosted copy uses);
 3. `data-local-webhook` — only for a page opened straight from disk (`file://`).
 
-Quick-tunnel hostnames change on every restart, so `backend.json` has to be refreshed afterwards.
-This happens **automatically** (section 3.3); the manual fallback is double-clicking
-`demo\publish-backend-url.bat` (or running the `.ps1`). The script reads the watchdog's
-`public-url.txt`, asks the bot a real question to prove the address answers, then commits and pushes
-`site/backend.json`; Pages redeploys by itself. Switches: `-NoPush` (write the file only) and
-`-SkipCheck` (publish without the live answer). While the machine is off the page still loads; the
-widget answers with its offline line instead of hanging.
+`site/backend.json` names the backend once. The hostname in it is permanent — it is the account's
+tunnel name, configured in `D:\Tools\ngrok\ngrok.yml` — so the file only changes if the demo moves to
+another machine or another tunnel. Nothing republishes it, and the widget no longer needs to re-read
+the address after a restart, because nothing changes it any more. While the machine is off the page
+still loads; the widget answers with its offline line instead of hanging.
 
-### 3.3 Automatic refresh when the tunnel restarts (watchdog hook)
+### 3.3 Why there is no watchdog any more
 
-A real incident: the tunnel restarted at 18:49 on 2026-09-22, came back on a new hostname, and the
-hosted page kept telling visitors the assistant was offline until `backend.json` was refreshed by
-hand. The watchdog now closes that gap with its `hook` (config: `D:\Tools\n8n\watchdog-config.json`):
+The first deployment used a free Cloudflare quick tunnel. Those hostnames are random and change on
+every start, so the project grew a watchdog: a scheduled task that noticed a dead tunnel, started a
+new one, restarted n8n with the new address, and republished the address to the hosted page. It
+worked, and it was the wrong shape — application code was compensating for a moving address.
 
-```json
-"hook": {
-  "enabled": true,
-  "command": "powershell.exe",
-  "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File",
-           "E:/Hermes/Projects/rag-support-bot/demo/publish-backend-url.ps1"],
-  "stateFile": "D:/Tools/n8n/hook-state.txt",
-  "timeoutSeconds": 180
-}
-```
+What actually went wrong (2026-09-23): the local proxy's TUN mode left a stale DNS mapping that broke
+`cloudflared`'s handshake with the Cloudflare edge. Every tunnel it started was announced and then
+refused by the edge (HTTP 530), the watchdog correctly refused to publish an address nobody could
+reach, and then sat out its own anti-flapping cooldown while the public page pointed at nothing. A
+reboot did not help, because the proxy starts with Windows.
 
-The watchdog runs that command after any repair, and on any scan where the tunnel URL differs from
-the last one the command succeeded with, so a restarted tunnel republishes its address within five
-minutes with nobody touching the machine. `hook-state.txt` records a URL only after a run that exited
-0, so a failed publish is retried on the next scan. Evidence is in `D:\Tools\n8n\watchdog.log`:
+What replaced it, in the order the problems disappear:
 
-```
-2026-09-22 19:01:41  healthy: service pid 46832, tunnel https://location-progress-finance-luck.trycloudflare.com
-2026-09-22 19:01:48  hook finished OK for https://location-progress-finance-luck.trycloudflare.com
-```
+1. **A permanent hostname.** The tunnel is the ngrok agent, and the hostname lives in its config file,
+   so it is identical after every start, crash and reboot.
+2. **The operating system supervises the processes.** n8n runs under a WinSW service wrapper, ngrok
+   under its own service installer. Both are Automatic, both have restart-on-failure, and both are
+   visible in `services.msc`.
+3. **Therefore nothing has to be republished.** `site/backend.json` was written once.
 
-The hook is also what makes the "only the page is permanent" limit smaller: the page stays reachable,
-and the address it talks to repairs itself as long as the machine is awake.
+The retired pieces (watchdog script, hook, republish script, quick tunnel) are gone from this
+repository. The generic version of the watchdog lives on as a public repository,
+**github.com/uhygyuf/service-tunnel-watchdog**, which is the honest home for "keep a tunnel and a
+service alive and republish an address that changes".
 
 ### 3.4 Knowledge base: how a document gets in
 
@@ -204,10 +207,11 @@ loader with a node that can set metadata.
    Gmail-API channel (section 3.1), which is verified end-to-end. The OAuth app itself lives in the
    **client's** Google Cloud project, so each customer needs the four setup steps once; treat that
    as part of onboarding, not as a defect.
-2. **Quick-tunnel URLs are not permanent.** `*.trycloudflare.com` names change on every start, so the
-   Telegram webhook registration changes with them. `start-public.bat` handles this automatically,
-   but for a permanently hosted instance use a real host (VPS + a named Cloudflare tunnel or the
-   client's own domain) — that is the Premium deployment tier.
+2. **Availability is bounded by the machine being awake.** n8n and the tunnel are Windows services on
+   one laptop, so they restart themselves after a crash or a reboot, but nothing answers while that
+   machine is off or asleep. A permanently hosted instance needs a real host (a small VPS running
+   n8n's own Docker image, or n8n Cloud) — that is the Premium deployment tier and is not part of
+   this repository.
 3. **Exposing n8n exposes the chat endpoint.** While the tunnel is up, anyone who knows the URL can
    send messages and consume the configured LLM quota. Stop the tunnel when you are done.
 4. **No ticket dashboard.** Tickets live in the Supabase `tickets` table; there is no UI yet.
@@ -217,30 +221,29 @@ loader with a node that can set metadata.
 
 ---
 
-## 5. Availability (crash recovery + out-of-band alerts)
-
-Two mechanisms watch the instance while Windows is on. Neither starts anything at Windows boot — the
-service only exists while the machine is running, and that is deliberate.
+## 5. Availability (what the operating system does now)
 
 | Mechanism | What it does |
 |---|---|
-| `D:\Tools\n8n\watchdog-n8n.ps1` (scheduled task **"n8n watchdog"**, every 5 min) | if the tunnel died or stopped answering, starts a fresh tunnel and restarts n8n with the new public URL in `WEBHOOK_URL`; if n8n itself is down, starts it again (`autoStart: true`) |
-| the same script's alerting (`notify.enabled`) | sends the alert **itself** to the Telegram Bot API — n8n cannot report its own death. Repeated alerts are rate-limited (`remindMinutes`, 60) |
+| Windows service **n8n support bot** (WinSW wrapper, Automatic) | starts n8n at boot; if the process fails, WinSW restarts it after 10 s, then 30 s, then 60 s, and resets the failure count after an hour without failures |
+| Windows service **ngrok** (Automatic; its installer also set the Windows recovery options) | starts the tunnel at boot with the permanent hostname and restarts it if it stops |
+| scheduled task **"n8n zombie cleanup"** (every 15 min) | legacy janitor for the old `n8n-serve.bat` launcher path: it only looks at console windows whose title mentions n8n, so it stays quiet while the services run. Kept because the manual local run still uses that launcher |
+| the workflow's own error-alert trigger | posts workflow failures to Telegram (n8n's native error workflow pattern) |
 
-Credentials for the alert live in `D:\Tools\n8n\watchdog-secrets.json` (restricted file, never inside
-the workflow and never in the log); the shareable config keeps only the file path. Log:
-`D:\Tools\n8n\watchdog.log` — one line per scan.
+The old out-of-band alerting went away with the watchdog. A separate script used to report n8n's death
+through the Telegram Bot API, because a dead n8n cannot report anything. With the service model there
+is no script to fail: a dead n8n is a stopped service, visible in `services.msc`, in `bot-status.bat`
+and in `D:\Tools\n8n\logs\n8n-service.*.log`.
 
-Verified by inducing both failures on purpose (2026-09-20):
+Verified on 2026-09-23, on the machine that runs it:
 
-| Failure | Result |
+| Check | Evidence |
 |---|---|
-| n8n + tunnel killed | `repaired: service started again, tunnel <new url>` + alert `message_id 35`; local and public HTTP 200 afterwards |
-| tunnel connected but unreachable at the edge | `repaired: tunnel <new url>, service restarted` + alert `message_id 36` |
-
-The generic version of this tool is a public repo: **github.com/uhygyuf/service-tunnel-watchdog**
-(21 sandbox tests, including "alert is delivered", "token never reaches the log", "recovery stays
-opt-in").
+| n8n runs as a service and loads the same database | installed from `n8n-service.xml`; `service state: Running / Automatic`; a question sent through the public address afterwards answered from `products.md`, which only exists in the existing workflow database |
+| the hostname is stable | two consecutive agent starts announced the same `https://flyable-rekindle-disobey.ngrok-free.dev` |
+| a visitor's request works through the permanent address | `POST https://flyable-rekindle-disobey.ngrok-free.dev/webhook/b45b0144-.../chat` returned `Yes! We ship to Canada — … [faq.md]`, with `Access-Control-Allow-Origin: https://uhygyuf.github.io` |
+| the page and the tunnel agree | `site/backend.json` holds the same hostname; `bot-status.bat` reports `published page points at the live tunnel` |
+| the switches really stop it | `bot-off.bat` set both services to `Disabled`, and port 5678 stopped answering; `bot-on.bat` brought them back |
 
 ---
 
