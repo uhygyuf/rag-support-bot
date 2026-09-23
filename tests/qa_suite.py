@@ -42,6 +42,34 @@ def nodes_by_name(wf):
     return {n["name"]: n for n in wf["nodes"]}
 
 
+CORE_FILE = "SupportBotCore-subworkflow.json"
+CHANNEL_FILES = {"SupportBotRAG-full.json": "demo page",
+                 "SupportBotTelegram-channel.json": "Telegram",
+                 "SupportBotEmail-channel.json": "email",
+                 "SupportBotEmailGmail-channel.json": "email"}
+BRAIN_NODES = {"Support Agent", "DeepSeek Chat Model", "Simple Memory",
+               "Supabase Vector Store (Tool)", "Embeddings OpenAI (Query)", "If escalated",
+               "Prep Ticket Question", "Insert Ticket", "Push to CRM", "Notify Telegram",
+               "Reply Escalated", "Reply Normal"}
+
+
+def merge_workflows(*wfs):
+    """The shipped blueprints are one logical workflow: the answer path (agent, knowledge
+    tool, handover rule, ticket, alert) lives in the core sub-workflow, and each channel
+    file only carries its own trigger and reply. Shape checks run against the union, so
+    they keep testing the real node set instead of how the files happen to be split."""
+    nodes, conns = [], {}
+    for w in wfs:
+        nodes.extend(w.get("nodes", []))
+        conns.update(w.get("connections", {}))
+    return {"nodes": nodes, "connections": conns}
+
+
+def core_calls(wf):
+    """The Execute Sub-workflow node(s) a channel file uses to reach the answer path."""
+    return [n for n in wf["nodes"] if "executeWorkflow" in n["type"]]
+
+
 def test_workflow(wf):
     N = nodes_by_name(wf)
     conns = wf["connections"]
@@ -156,7 +184,7 @@ def test_workflow(wf):
         js = prep["parameters"].get("jsCode") or ""
         check("T4.11", "workflow", "Ticket records the CUSTOMER's question "
                                    "(read from the trigger, not the model reply)",
-              "$('When chat message received')" in js and "chatInput" in js
+              "$('When Executed by Another Workflow')" in js and "question" in js
               and "item.output" not in js,
               js[:120])
 
@@ -431,13 +459,19 @@ def test_channels(channel_dir):
         wf = load_workflow(path)
         N = nodes_by_name(wf)
         blob = json.dumps(wf, ensure_ascii=False)
-        check("%s.1" % cid, "channels", "%s: readable + has an AI Agent" % fname,
-              any(n["type"] == "@n8n/n8n-nodes-langchain.agent"
-                  for n in wf["nodes"]))
-        check("%s.2" % cid, "channels", "%s: reuses the same knowledge base tool" % fname,
-              "Supabase Vector Store (Tool)" in N)
-        check("%s.3" % cid, "channels", "%s: escalation still writes a ticket" % fname,
-              "Insert Ticket" in N and "If escalated" in N)
+        calls = core_calls(wf)
+        check("%s.1" % cid, "channels", "%s: calls the shared answer path exactly once" % fname,
+              len(calls) == 1 and "SupportBotCore01" in json.dumps(calls[0]),
+              "calls: %s" % [c["name"] for c in calls])
+        check("%s.2" % cid, "channels", "%s: passes the customer question and its own "
+                                        "channel label" % fname,
+              bool(calls) and "question" in json.dumps(calls[0]["parameters"])
+              and CHANNEL_FILES[fname] in json.dumps(calls[0]["parameters"]),
+              json.dumps((calls[0]["parameters"].get("workflowInputs") if calls else ""),
+                         ensure_ascii=False)[:160])
+        check("%s.3" % cid, "channels", "%s: keeps no copy of the answer path "
+                                        "(the drift this project already had once)" % fname,
+              not (set(N) & BRAIN_NODES), "copied: %s" % sorted(set(N) & BRAIN_NODES))
         check("%s.4" % cid, "channels", "%s: no personal data committed "
                                         "(email / chat id must be placeholders)" % fname,
               not re.search(r"[A-Za-z0-9._%+-]+@gmail\.com|\b\d{9,11}\b", blob)
@@ -487,8 +521,8 @@ def test_channels(channel_dir):
               "$('Prep Email Question')" in json.dumps(
                   N.get("Send Email Reply", {}).get("parameters", {})))
 
-    # --- CRM / HTTP integration in the main workflow
-    main_wf = load_workflow(os.path.join(ROOT, "workflow", "SupportBotRAG-full.json"))
+    # --- CRM / HTTP integration in the escalation branch (now part of the shared answer path)
+    main_wf = load_workflow(os.path.join(ROOT, "workflow", CORE_FILE))
     M = nodes_by_name(main_wf)
     crm = M.get("Push to CRM")
     check("T22.1", "integration", "CRM/HTTP node present in the escalation branch",
@@ -582,8 +616,13 @@ def test_gmail_channel(workflow_dir):
     check("T26.4", "reliability", "Handled mail is marked read (no duplicate answers)",
           bool(N.get("Mark handled as read"))
           and N["Mark handled as read"]["parameters"].get("operation") == "markAsRead")
-    check("T26.5", "channels", "Same knowledge base + escalation as every other channel",
-          "Supabase Vector Store (Tool)" in N and "If escalated" in N and "Insert Ticket" in N)
+    calls = core_calls(wf)
+    check("T26.5", "channels", "Calls the same shared answer path as every other channel",
+          len(calls) == 1 and "SupportBotCore01" in json.dumps(calls[0])
+          and "email" in json.dumps(calls[0]["parameters"]),
+          "calls: %s" % [c["name"] for c in calls])
+    check("T26.8", "channels", "The Gmail channel keeps no copy of the answer path",
+          not (set(N) & BRAIN_NODES), "copied: %s" % sorted(set(N) & BRAIN_NODES))
     check("T26.6", "channels", "No personal data committed",
           not re.search(r"[A-Za-z0-9._%+-]+@gmail\.com|\b\d{9,11}\b", blob)
           and "@example.com" in blob)
@@ -745,40 +784,46 @@ def test_switches():
     # it names the ticket, it never repeats the false "could not answer", and the wording cannot
     # drift between channels again.
     wf_dir = os.path.join(ROOT, "workflow")
-    channels = {"SupportBotRAG-full.json": "demo page",
-                "SupportBotTelegram-channel.json": "Telegram",
-                "SupportBotEmail-channel.json": "email",
-                "SupportBotEmailGmail-channel.json": "email"}
-    alerts = {}
-    for fn in channels:
-        node = nodes_by_name(load_workflow(os.path.join(wf_dir, fn))).get("Notify Telegram")
-        alerts[fn] = (node or {}).get("parameters", {}).get("text", "")
+    core = load_workflow(os.path.join(wf_dir, CORE_FILE))
+    alert = (nodes_by_name(core).get("Notify Telegram") or {}).get("parameters", {}).get("text", "")
 
     check("T29.1", "channels", "Every stored ticket is announced with its number, and a lost ticket is shouted about",
-          all("$json.id" in t and "NOT SAVED" in t for t in alerts.values()),
-          "without a number: %s" % [f for f, t in alerts.items() if "$json.id" not in t])
+          "$json.id" in alert and "NOT SAVED" in alert, alert[:80])
 
-    stale = [fn for fn in list(channels) + ["CreateSupportTicket-tool.json"]
-             if "could not answer" in read(os.path.join(wf_dir, fn))]
+    stale = [f for f in sorted(os.listdir(wf_dir)) if f.endswith(".json")
+             and "could not answer" in read(os.path.join(wf_dir, f))]
     check("T29.2", "channels", "No artifact still tells the operator the bot could not answer",
           not stale, "still saying it: %s" % stale)
 
-    shaped = {fn: re.sub(r"Channel: .*", "Channel: <x>", t) for fn, t in alerts.items()}
-    check("T29.3", "channels", "The alert wording is identical across channels apart from the label",
-          len(set(shaped.values())) == 1
-          and all("passed your request to our team" in t for t in alerts.values()),
-          "%d distinct wordings" % len(set(shaped.values())))
+    check("T29.3", "channels", "The alert names the channel it came from, taken from the caller "
+                               "instead of a hard-coded label",
+          "When Executed by Another Workflow" in alert and "json.channel" in alert, alert[:120])
+
+    # The four copies are why the Telegram channel spent a day answering the old rule. One file
+    # owns the answer path now, and every channel has to call it.
+    with_brain = [f for f in sorted(os.listdir(wf_dir)) if f.endswith(".json")
+                  and "Support Agent" in nodes_by_name(load_workflow(os.path.join(wf_dir, f)))]
+    silent = [f for f in CHANNEL_FILES
+              if not any("Execute core" in n["name"]
+                         for n in core_calls(load_workflow(os.path.join(wf_dir, f))))]
+    check("T29.4", "channels", "The answer path lives in exactly one blueprint and every "
+                               "channel calls it",
+          with_brain == [CORE_FILE] and not silent,
+          "owning it: %s | not calling it: %s" % (with_brain, silent))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workflow", default=os.path.join(
         ROOT, "workflow", "SupportBotRAG-full.json"))
+    ap.add_argument("--core", default=os.path.join(ROOT, "workflow", CORE_FILE))
     ap.add_argument("--subworkflow", default=os.path.join(
         ROOT, "workflow", "CreateSupportTicket-tool.json"))
     args = ap.parse_args()
 
-    wf = load_workflow(args.workflow)
+    # A channel file plus the shared answer path is what actually runs, so the shape checks
+    # look at both together. The per-channel checks further down stay strict about each file.
+    wf = merge_workflows(load_workflow(args.workflow), load_workflow(args.core))
     test_workflow(wf)
     if os.path.exists(args.subworkflow):
         test_subworkflow(args.subworkflow)

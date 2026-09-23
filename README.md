@@ -100,7 +100,7 @@ and what the design deliberately does not have: `docs/architecture.md`.
 
 | Suite | What it covers | Last run |
 |---|---|---|
-| `tests/qa_suite.py` | **151 static + contract checks** (workflow shape 32, channels 26, reliability 21, safety 12, release 11, ux 10, a11y 10, integration 10, content 8, docs 5, security 4, quality 2) — no network, no writes | 151 / 151 PASS |
+| `tests/qa_suite.py` | **153 static + contract checks** (workflow shape 32, channels 28, reliability 21, safety 12, release 11, ux 10, a11y 10, integration 10, content 8, docs 5, security 4, quality 2) — no network, no writes | 153 / 153 PASS |
 | `tests/widget_dom_test.js` | 12 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n), its offline behaviour, its retry after a stale address, and its refusal to render an answer as HTML, in a stubbed DOM | 12 / 12 PASS |
 | `tests/test_ingest.py` | 13 offline cases for the loader: chunk boundaries, an oversized block, CRLF, a whitespace-only file, and the rule that the two APIs never share headers | 13 / 13 PASS |
 | `tests/kb_live_check.py` | reads the live knowledge base and compares it with `knowledge/`: every chunk names a file, every file is loaded, no stray source, chunk counts match the plan (needs credentials; skipped without them) | 5 / 5 PASS |
@@ -126,6 +126,7 @@ Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.
 
 1. Import the workflows into n8n and attach your own credentials (exports never carry secrets):
    ```bash
+   npx n8n import:workflow --input=workflow/SupportBotCore-subworkflow.json
    npx n8n import:workflow --input=workflow/SupportBotRAG-full.json
    npx n8n import:workflow --input=workflow/SupportBotEmailGmail-channel.json
    npx n8n import:workflow --input=workflow/SupportBotTelegram-channel.json
@@ -133,14 +134,25 @@ Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.
    ```
    Credentials needed: Supabase (pgvector), DeepSeek (chat model), SiliconFlow or OpenAI
    (embeddings), Gmail OAuth2, Telegram bot. Setup detail: `docs/client-setup-guide.md`.
+
+   `SupportBotCore-subworkflow.json` is the answer path — the agent, the knowledge-base tool, the
+   handover rule, the ticket insert and the operator alert — and every channel calls it as a
+   sub-workflow, passing the customer question and its own channel label. That is why the wording,
+   the ticket and the alert exist in exactly one file. Import it first and keep it **active**: n8n
+   refuses to execute a sub-workflow that is not active (`Workflow is not active and cannot be
+   executed`).
 2. Ingest the knowledge base: `python tools/ingest.py --replace` (chunks the files in `knowledge/`,
    calls the embedding model, and writes rows with a real `source` label). The **On form submission**
    trigger in the RAG workflow also ingests a file, but n8n 2.38.7's binary loader stamps every chunk
    `metadata.source = "blob"` and the node has no parameter to change it, so uploads through the form
    produce answers that cannot name their source. Use the form for quick text experiments, the script
    for anything a customer will see.
-3. Publish the workflows (top-right **Publish**, or `npx n8n publish:workflow --id=<id>` **while n8n
-   is stopped** — the CLI cannot register a webhook into a running instance). The widget URL is
+3. Publish the workflows (top-right **Publish**, or `npx n8n publish:workflow --id=<id>` with n8n
+   stopped) and then **start or restart the n8n service**: the CLI writes the database but cannot
+   register a webhook into a running instance, so a workflow published while n8n was up keeps
+   answering 404 until the process reloads it. Check with
+   `https://api.telegram.org/bot<token>/getWebhookInfo` (Telegram) — `pending_update_count: 0` and no
+   `Wrong response from the webhook` error means the trigger is live. The widget URL is
    `http://<host>:5678/webhook/<chat-trigger-webhookId>/chat`.
 4. Open the demo store: double-click `site/index.html`, then click **"Need coffee help?"**.
 
@@ -197,9 +209,10 @@ rag-support-bot/
 ├── knowledge/       the "company documents" the bot is allowed to answer from
 ├── tools/           ingest.py — loads knowledge/ into Supabase with a real source label
 ├── workflow/        design notes + exported n8n workflows
-│   ├── SupportBotRAG-full.json             website channel + KB ingestion (20 nodes)
-│   ├── SupportBotEmailGmail-channel.json   Gmail channel, threaded replies (18 nodes)
-│   ├── SupportBotTelegram-channel.json     Telegram channel (13 nodes)
+│   ├── SupportBotCore-subworkflow.json     the answer path every channel calls (13 nodes)
+│   ├── SupportBotRAG-full.json             website channel + KB ingestion (9 nodes)
+│   ├── SupportBotEmailGmail-channel.json   Gmail channel, threaded replies (7 nodes)
+│   ├── SupportBotTelegram-channel.json     Telegram channel (3 nodes)
 │   ├── SupportBotErrorAlerts.json          Error Trigger → operator alert (3 nodes)
 │   ├── SupportBotEmail-channel.json        earlier IMAP-based email channel (retired)
 │   └── CreateSupportTicket-tool.json       earlier tool-based ticket node (kept for reference)

@@ -1,485 +1,147 @@
-[
-  {
-    "updatedAt": "2026-09-18T11:24:16.000Z",
-    "createdAt": "2026-09-18T11:24:11.973Z",
-    "id": "SupportBotTelegram01",
-    "name": "Support Bot — Telegram channel",
-    "description": null,
-    "active": true,
-    "isArchived": false,
-    "nodes": [
-      {
-        "parameters": {
-          "updates": [
-            "message"
-          ],
-          "additionalFields": {}
-        },
-        "type": "n8n-nodes-base.telegramTrigger",
-        "typeVersion": 1.2,
-        "position": [
-          -620,
-          300
+{
+  "updatedAt": "2026-09-23T06:22:43.000Z",
+  "createdAt": "2026-09-18T11:24:11.973Z",
+  "id": "SupportBotTelegram01",
+  "name": "Support Bot — Telegram channel",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
         ],
-        "id": "e4e7534d-9a8f-4bd2-b6e6-e413d7bc4679",
-        "name": "Telegram Trigger",
-        "credentials": {
-          "telegramApi": {
-            "id": "HfMV2TNGkXsBsIQd",
-            "name": "Telegram account"
-          }
-        },
-        "webhookId": "aa51e0d0-7c9c-4f2f-9c61-3d5b7e2f4a11"
+        "additionalFields": {}
       },
-      {
-        "parameters": {
-          "promptType": "define",
-          "text": "={{ $json.message.text }}",
-          "options": {
-            "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES - follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If the knowledge_base results do not contain the answer: reply EXACTLY this sentence and nothing else:\n   I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\n4. If the customer asks to talk to a human, a person, an agent or the support team: reply EXACTLY this sentence and nothing else:\n   Of course - I've passed your request to our team and a human will reply within 24 hours.\n   The customer asked for a person, so this handoff is the answer itself; never answer that you do not have the information.\n5. Rules 3 and 4 are the only two handoff wordings. Never promise anything else and never invent other wording.\n6. Keep answers under 60 words. Friendly, concrete, no fluff.\n7. End every real answer with the source file name in square brackets, e.g. [faq.md].\n8. Use the conversation history for follow-up questions.",
-            "maxIterations": 5
-          }
-        },
-        "type": "@n8n/n8n-nodes-langchain.agent",
-        "typeVersion": 3.1,
-        "position": [
-          -260,
-          300
-        ],
-        "id": "87258fac-0d77-448e-aa4d-88a133cee065",
-        "name": "Support Agent",
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 3000
-      },
-      {
-        "parameters": {
-          "mode": "retrieve-as-tool",
-          "topK": 4,
-          "options": {},
-          "toolName": "knowledge_base",
-          "toolDescription": "Search the Harbor Coffee Roasters knowledge base (FAQ, shipping, prices, policies). ALWAYS use this before answering any customer question.",
-          "tableName": {
-            "__rl": true,
-            "mode": "list",
-            "value": "documents",
-            "cachedResultName": "documents"
-          },
-          "includeDocumentMetadata": true
-        },
-        "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-        "typeVersion": 1.3,
-        "position": [
-          -60,
-          560
-        ],
-        "id": "2b56e1ae-88b4-4e86-8202-b989bfabd17f",
-        "name": "Supabase Vector Store (Tool)",
-        "credentials": {
-          "supabaseApi": {
-            "id": "jQOH7JyVce4o9i39",
-            "name": "Supabase account"
-          }
-        },
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 1500
-      },
-      {
-        "parameters": {
-          "model": "BAAI/bge-m3",
-          "options": {}
-        },
-        "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
-        "typeVersion": 1.2,
-        "position": [
-          180,
-          680
-        ],
-        "id": "3cbbb339-ccf4-45de-9388-b57f9cfdeae6",
-        "name": "Embeddings OpenAI (Query)",
-        "credentials": {
-          "openAiApi": {
-            "id": "ogZ8uYheTecXRIZI",
-            "name": "OpenAI account"
-          }
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -620,
+        300
+      ],
+      "id": "e4e7534d-9a8f-4bd2-b6e6-e413d7bc4679",
+      "name": "Telegram Trigger",
+      "credentials": {
+        "telegramApi": {
+          "id": "HfMV2TNGkXsBsIQd",
+          "name": "Telegram account"
         }
       },
-      {
-        "parameters": {
-          "model": "deepseek-chat",
-          "options": {}
-        },
-        "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
-        "typeVersion": 1,
-        "position": [
-          80,
-          300
-        ],
-        "id": "63595789-d756-46d5-af17-d7b78665a6d5",
-        "name": "DeepSeek Chat Model",
-        "credentials": {
-          "deepSeekApi": {
-            "id": "wo6MAuk0h5i7BtkI",
-            "name": "DeepSeek account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "sessionIdType": "customKey",
-          "sessionKey": "={{ $json.message.chat.id }}",
-          "contextWindowLength": 10
-        },
-        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-        "typeVersion": 1.4,
-        "position": [
-          300,
-          520
-        ],
-        "id": "852df330-c85d-4e37-9cb8-f5d29daab535",
-        "name": "Simple Memory"
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": false,
-              "typeValidation": "loose",
-              "version": 2
-            },
-            "conditions": [
-              {
-                "id": "esc-1",
-                "leftValue": "={{ $json.output }}",
-                "rightValue": "passed your question to our team",
-                "operator": {
-                  "type": "string",
-                  "operation": "contains"
-                }
-              },
-              {
-                "id": "esc-2",
-                "leftValue": "={{ $json.output }}",
-                "rightValue": "passed your request to our team",
-                "operator": {
-                  "type": "string",
-                  "operation": "contains"
-                }
-              }
-            ],
-            "combinator": "or"
-          },
-          "options": {}
-        },
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          0,
-          300
-        ],
-        "id": "8ee3c31c-647f-4470-ac9d-e9dd45880312",
-        "name": "If escalated"
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForAllItems",
-          "jsCode": "const t = $('Telegram Trigger').first().json;\nreturn [{ json: { question: (t.message && t.message.text) || '' } }];"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          160,
-          520
-        ],
-        "id": "af572789-0c2f-44b3-aec9-a8d8ba8047b9",
-        "name": "Prep Ticket Question"
-      },
-      {
-        "parameters": {
-          "resource": "row",
-          "operation": "create",
-          "tableId": "tickets",
-          "dataToSend": "autoMapInputData",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.supabase",
-        "typeVersion": 1,
-        "position": [
-          400,
-          520
-        ],
-        "id": "77a60590-835e-4847-8f71-89388d502040",
-        "name": "Insert Ticket",
-        "credentials": {
-          "supabaseApi": {
-            "id": "jQOH7JyVce4o9i39",
-            "name": "Supabase account"
-          }
-        },
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 2000
-      },
-      {
-        "parameters": {
-          "resource": "message",
-          "operation": "sendMessage",
-          "chatId": "PUT_YOUR_CHAT_ID_HERE",
-          "text": "=New support ticket #{{ $json.id || 'NOT SAVED - check the Supabase connection' }} - {{ $json.question }}\n\nWhy: {{ $('Support Agent').first().json.output.includes('passed your request to our team') ? 'the customer asked for a human' : 'the knowledge base had no answer' }}\nChannel: Telegram\n\nOpen the Supabase 'tickets' table to follow up.",
-          "additionalFields": {}
-        },
-        "type": "n8n-nodes-base.telegram",
-        "typeVersion": 1.2,
-        "position": [
-          600,
-          520
-        ],
-        "id": "04273d2e-c43d-4c9f-8750-d2f189f6dba0",
-        "name": "Notify Telegram",
-        "onError": "continueRegularOutput",
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 2000,
-        "credentials": {
-          "telegramApi": {
-            "id": "HfMV2TNGkXsBsIQd",
-            "name": "Telegram account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForAllItems",
-          "jsCode": "const ans = ($('Support Agent').first().json.output || '');\nconst askedForHuman = ans.indexOf('passed your request to our team') !== -1;\nconst output = askedForHuman\n  ? \"Of course - I've passed your request to our team and a human will reply within 24 hours.\"\n  : \"I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\";\nreturn [{ json: { output } }];"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          840,
-          480
-        ],
-        "id": "e14c16ff-1ae6-4a95-897c-e332378d9167",
-        "name": "Reply Escalated"
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForAllItems",
-          "jsCode": "const item = $input.first().json;\nreturn [{ json: { output: item.output || '' } }];"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          840,
-          120
-        ],
-        "id": "a8b3bca1-2c15-425a-933d-a5a5b309b5d8",
-        "name": "Reply Normal"
-      },
-      {
-        "parameters": {
-          "resource": "message",
-          "operation": "sendMessage",
-          "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
-          "text": "={{ $json.output }}",
-          "additionalFields": {}
-        },
-        "type": "n8n-nodes-base.telegram",
-        "typeVersion": 1.2,
-        "position": [
-          1080,
-          300
-        ],
-        "id": "c0183e0f-f8de-4b60-8646-672c5148889a",
-        "name": "Send Telegram Reply",
-        "credentials": {
-          "telegramApi": {
-            "id": "HfMV2TNGkXsBsIQd",
-            "name": "Telegram account"
-          }
-        },
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 2000
-      }
-    ],
-    "connections": {
-      "Telegram Trigger": {
-        "main": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Support Agent": {
-        "main": [
-          [
-            {
-              "node": "If escalated",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Supabase Vector Store (Tool)": {
-        "ai_tool": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "ai_tool",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Embeddings OpenAI (Query)": {
-        "ai_embedding": [
-          [
-            {
-              "node": "Supabase Vector Store (Tool)",
-              "type": "ai_embedding",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DeepSeek Chat Model": {
-        "ai_languageModel": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "ai_languageModel",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Simple Memory": {
-        "ai_memory": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "ai_memory",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "If escalated": {
-        "main": [
-          [
-            {
-              "node": "Prep Ticket Question",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Reply Normal",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Prep Ticket Question": {
-        "main": [
-          [
-            {
-              "node": "Insert Ticket",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Insert Ticket": {
-        "main": [
-          [
-            {
-              "node": "Notify Telegram",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Notify Telegram": {
-        "main": [
-          [
-            {
-              "node": "Reply Escalated",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Reply Escalated": {
-        "main": [
-          [
-            {
-              "node": "Send Telegram Reply",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Reply Normal": {
-        "main": [
-          [
-            {
-              "node": "Send Telegram Reply",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      }
+      "webhookId": "aa51e0d0-7c9c-4f2f-9c61-3d5b7e2f4a11"
     },
-    "settings": {
-      "executionOrder": "v1"
-    },
-    "staticData": null,
-    "meta": {},
-    "nodeGroups": [],
-    "pinData": {},
-    "versionId": "120a3c43-23a7-4532-a8a8-c8b4fca9c647",
-    "activeVersionId": "120a3c43-23a7-4532-a8a8-c8b4fca9c647",
-    "versionCounter": 1,
-    "triggerCount": 0,
-    "sourceWorkflowId": null,
-    "tags": [],
-    "shared": [
-      {
-        "updatedAt": "2026-09-18T11:24:11.976Z",
-        "createdAt": "2026-09-18T11:24:11.976Z",
-        "role": "workflow:owner",
-        "workflowId": "SupportBotTelegram01",
-        "projectId": "jSEYIip5OsVM51lB",
-        "project": {
-          "updatedAt": "2026-09-14T07:47:59.561Z",
-          "createdAt": "2026-09-14T07:42:45.127Z",
-          "id": "jSEYIip5OsVM51lB",
-          "name": "YOUR_NAME <YOUR_EMAIL@example.com>",
-          "type": "personal",
-          "icon": null,
-          "description": null,
-          "customTelemetryTags": [],
-          "creatorId": "30280390-9d3a-4d95-90d9-114f020e916e"
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        300
+      ],
+      "id": "c0183e0f-f8de-4b60-8646-672c5148889a",
+      "name": "Send Telegram Reply",
+      "credentials": {
+        "telegramApi": {
+          "id": "HfMV2TNGkXsBsIQd",
+          "name": "Telegram account"
         }
-      }
-    ],
-    "versionMetadata": {
-      "name": null,
-      "description": null
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "SupportBotCore01",
+          "mode": "list",
+          "cachedResultName": "Support Bot — core (answers and handover)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "question": "={{ $json.message.text }}",
+            "channel": "Telegram",
+            "sessionKey": "={{ $json.message.chat.id }}"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ],
+      "id": "3f046b23-580e-4579-9bef-330088abacd2",
+      "name": "Execute core"
     }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute core",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute core": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "c113f4d4-e960-4017-83e3-6cea6e560efd",
+  "activeVersionId": "c113f4d4-e960-4017-83e3-6cea6e560efd",
+  "versionCounter": 5,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-09-18T11:24:11.976Z",
+      "createdAt": "2026-09-18T11:24:11.976Z",
+      "role": "workflow:owner",
+      "workflowId": "SupportBotTelegram01",
+      "projectId": "jSEYIip5OsVM51lB",
+      "project": {
+        "updatedAt": "2026-09-14T07:47:59.561Z",
+        "createdAt": "2026-09-14T07:42:45.127Z",
+        "id": "jSEYIip5OsVM51lB",
+        "name": "Han wang <your-address@example.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "30280390-9d3a-4d95-90d9-114f020e916e"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
   }
-]
+}

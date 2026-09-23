@@ -669,3 +669,41 @@ instead of quietly showing no number.
 |---|---|
 | `python tests/qa_suite.py` | 151 checks, 0 failed (`T29.1` the alert names the ticket and shouts when it was not stored, `T29.2` no artifact still says "could not answer", `T29.3` no drift between channels) |
 | a normal question through the permanent address | `200`, `Harbor House ... $18.50 for 340 g ... [products.md]` |
+
+---
+
+## O. 2026-09-23 - the four copies became one (sub-workflow)
+
+The Telegram channel answered the old rule for a day because the same sentence lived in four
+workflow files. n8n's own guidance for that is to keep shared logic in a sub-workflow and call it
+from every channel ("Break workflows into smaller parts"), so that is what the shipped workflows do
+now.
+
+| File | What it is now | Nodes |
+|---|---|---|
+| `SupportBotCore-subworkflow.json` | the answer path: agent + prompt, chat model, memory, knowledge-base tool + embeddings, escalation gate, ticket prep + insert, CRM placeholder, operator alert, both replies | 13 |
+| `SupportBotRAG-full.json` | website channel (chat trigger → input guard → core) + knowledge ingestion form | 9 |
+| `SupportBotTelegram-channel.json` | Telegram trigger → core → reply to the sender | 3 |
+| `SupportBotEmailGmail-channel.json` | Gmail trigger → alias gate → core → threaded reply → mark read | 7 |
+| `SupportBotEmail-channel.json` | retired IMAP variant, same shape | 6 |
+
+Each channel passes the customer `question`, its own `channel` label and its own `sessionKey` (web
+session, Telegram chat id, mail thread). The alert reads that label from the caller, so
+`Channel: Telegram` can no longer disagree with the file it sits in.
+
+### What the refactor exposed
+
+| Finding | Evidence |
+|---|---|
+| n8n refuses to execute an **inactive** sub-workflow | the first run after wiring returned `{"message":"Error in workflow"}`; the execution record reads `Execute core -> Workflow is not active and cannot be executed.` Activating and publishing the core fixed it |
+| A workflow imported while n8n is running answers **404** until the process reloads it | right after the import, `getWebhookInfo` reported `last_error_message: Wrong response from the webhook: 404 Not Found` with `pending_update_count: 1` — a customer message waiting. The CLI activation writes the database only; restarting the n8n service registered the trigger and Telegram re-delivered that message |
+| The sub-workflow call is an ordinary node, so the reply path is unchanged | execution 478: agent produced the handoff sentence, ticket `84` was inserted, the alert read `New support ticket #84 - I want to talk to a human ... Channel: demo page`, and the visitor still received `{"output": "Of course - I've passed your request to our team and a human will reply within 24 hours."}` |
+| Telegram, end to end, on the new shape | the waiting message was delivered after the restart: agent answered the handoff sentence, ticket `83`, alert `Channel: Telegram`, `Send Telegram Reply` returned `message_id 115` |
+
+### Re-test
+
+| Command | Result |
+|---|---|
+| `python tests/qa_suite.py` | 153 checks, 0 failed. `T20.x` / `T21.x` / `T26.5` now assert that each channel calls the core exactly once, passes its own label, and keeps no copy of the answer path; `T29.4` fails if the answer path ever exists in more than one blueprint |
+| a normal question through the permanent address | `200`, cited answer, no ticket row |
+| a handoff through the permanent address | `200`, handoff sentence, ticket `84`, alert with `Channel: demo page` |

@@ -1,0 +1,466 @@
+{
+  "updatedAt": "2026-09-23T06:20:11.000Z",
+  "createdAt": "2026-09-23T06:18:50.858Z",
+  "id": "SupportBotCore01",
+  "name": "Support Bot — core (answers and handover)",
+  "description": "One place for the agent, the knowledge tool, the handover rule, the ticket and the alert. Called by every channel.",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "question",
+              "type": "string"
+            },
+            {
+              "name": "channel",
+              "type": "string"
+            },
+            {
+              "name": "sessionKey",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -560,
+        0
+      ],
+      "id": "8ff0efab-8e02-4f13-8cd3-79bc11dd0db4",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.question }}",
+        "options": {
+          "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES - follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If the knowledge_base results do not contain the answer: reply EXACTLY this sentence and nothing else:\n   I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\n4. If the customer asks to talk to a human, a person, an agent or the support team: reply EXACTLY this sentence and nothing else:\n   Of course - I've passed your request to our team and a human will reply within 24 hours.\n   The customer asked for a person, so this handoff is the answer itself; never answer that you do not have the information.\n5. Rules 3 and 4 are the only two handoff wordings. Never promise anything else and never invent other wording.\n6. Keep answers under 60 words. Friendly, concrete, no fluff.\n7. End every real answer with the source file name in square brackets, copied exactly from the \"source\" field of the knowledge_base result. Use only the value the tool returned; never write a file name from memory and never invent one.\n8. Use the conversation history for follow-up questions.",
+          "maxIterations": 5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -528,
+        272
+      ],
+      "id": "b02385d6-64a1-4bc0-a642-80d532b3a90f",
+      "name": "Support Agent",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        480
+      ],
+      "id": "f7ae9c07-53d2-4cfb-a897-36700557f0eb",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "wo6MAuk0h5i7BtkI",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10,
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When Executed by Another Workflow').first().json.sessionKey }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -432,
+        608
+      ],
+      "id": "0607f67c-fe17-454d-a70d-19fae4f515f1",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search the Harbor Coffee Roasters knowledge base (FAQ, shipping, prices, policies). ALWAYS use this before answering any customer question.",
+        "tableName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "documents",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        736
+      ],
+      "id": "e41b7010-2d3a-4293-81db-a3e286f82232",
+      "name": "Supabase Vector Store (Tool)",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1500,
+      "credentials": {
+        "supabaseApi": {
+          "id": "jQOH7JyVce4o9i39",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "BAAI/bge-m3",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -272,
+        944
+      ],
+      "id": "900a5a82-b76e-44b8-a89f-eb3937799317",
+      "name": "Embeddings OpenAI (Query)",
+      "credentials": {
+        "openAiApi": {
+          "id": "ogZ8uYheTecXRIZI",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "esc-1",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "passed your question to our team",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "esc-2",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "passed your request to our team",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        304
+      ],
+      "id": "77a0c1a1-360f-4293-928b-08acd1b2a28f",
+      "name": "If escalated"
+    },
+    {
+      "parameters": {
+        "jsCode": "const q = ($('When Executed by Another Workflow').first().json.question || '');\nreturn [{ json: { question: q } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        224
+      ],
+      "id": "4d18a71c-bc85-434b-aa91-978ac74581fd",
+      "name": "Prep Ticket Question"
+    },
+    {
+      "parameters": {
+        "tableId": "tickets",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        128,
+        320
+      ],
+      "id": "b834ab7e-3c52-4c69-9979-7d7476500eab",
+      "name": "Insert Ticket",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "jQOH7JyVce4o9i39",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "PUT_YOUR_CRM_WEBHOOK_URL",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ event: 'support_ticket', question: $json.question, ticket_id: $json.id, created_at: $json.created_at, source: 'website_chat' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32,
+        592
+      ],
+      "id": "7f6250a1-36e7-465e-ae23-32a395337f63",
+      "name": "Push to CRM",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chatId": "PUT_YOUR_CHAT_ID_HERE",
+        "text": "=New support ticket #{{ $json.id || 'NOT SAVED - check the Supabase connection' }} - {{ $json.question }}\n\nWhy: {{ $('Support Agent').first().json.output.includes('passed your request to our team') ? 'the customer asked for a human' : 'the knowledge base had no answer' }}\nChannel: {{ $('When Executed by Another Workflow').first().json.channel }}\n\nOpen the Supabase 'tickets' table to follow up.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        816
+      ],
+      "id": "ad038584-a30e-4483-86a2-16b8797c6796",
+      "name": "Notify Telegram",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "webhookId": "d0c3cb65-b2cf-40ca-9b50-79eaac5d4f28",
+      "credentials": {
+        "telegramApi": {
+          "id": "HfMV2TNGkXsBsIQd",
+          "name": "Telegram account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ans = ($('Support Agent').first().json.output || '');\nconst askedForHuman = ans.indexOf('passed your request to our team') !== -1;\nconst output = askedForHuman\n  ? \"Of course - I've passed your request to our team and a human will reply within 24 hours.\"\n  : \"I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\";\nreturn [{ json: { output } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        816
+      ],
+      "id": "08a60dd9-7899-46e6-9d4c-fa41cfc68f60",
+      "name": "Reply Escalated"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nreturn [{ json: { output: item.output || '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        480
+      ],
+      "id": "c133ba73-d15b-47d1-983f-ae3379d72719",
+      "name": "Reply Normal"
+    }
+  ],
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store (Tool)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI (Query)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store (Tool)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Support Agent": {
+      "main": [
+        [
+          {
+            "node": "If escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If escalated": {
+      "main": [
+        [
+          {
+            "node": "Prep Ticket Question",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply Normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Ticket Question": {
+      "main": [
+        [
+          {
+            "node": "Insert Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Ticket": {
+      "main": [
+        [
+          {
+            "node": "Push to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Telegram": {
+      "main": [
+        [
+          {
+            "node": "Reply Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Push to CRM": {
+      "main": [
+        [
+          {
+            "node": "Notify Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "04c0d8f6-ccb1-41ea-ab1e-ce8b34a353ab",
+  "activeVersionId": "04c0d8f6-ccb1-41ea-ab1e-ce8b34a353ab",
+  "versionCounter": 1,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-09-23T06:18:50.861Z",
+      "createdAt": "2026-09-23T06:18:50.861Z",
+      "role": "workflow:owner",
+      "workflowId": "SupportBotCore01",
+      "projectId": "jSEYIip5OsVM51lB",
+      "project": {
+        "updatedAt": "2026-09-14T07:47:59.561Z",
+        "createdAt": "2026-09-14T07:42:45.127Z",
+        "id": "jSEYIip5OsVM51lB",
+        "name": "Han wang <your-address@example.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "30280390-9d3a-4d95-90d9-114f020e916e"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

@@ -1,613 +1,275 @@
-[
-  {
-    "id": "SupportBotEmailGmail01",
-    "name": "Support Bot — Email channel (Gmail API)",
-    "active": false,
-    "isArchived": false,
-    "nodes": [
-      {
-        "parameters": {
-          "pollTimes": {
-            "item": [
-              {
-                "mode": "everyMinute"
-              }
-            ]
-          },
-          "simple": false,
-          "filters": {
-            "q": "to:YOUR_EMAIL+support@example.com",
-            "readStatus": "unread"
-          },
-          "options": {}
+{
+  "updatedAt": "2026-09-23T06:23:02.000Z",
+  "createdAt": "2026-09-19T06:18:58.668Z",
+  "id": "SupportBotEmailGmail01",
+  "name": "Support Bot — Email channel (Gmail API)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
         },
-        "type": "n8n-nodes-base.gmailTrigger",
-        "typeVersion": 1.4,
-        "position": [
-          -900,
-          300
-        ],
-        "id": "6bb8cec1-4ae5-42d8-bb81-79d6a21321b1",
-        "name": "Gmail Trigger (support alias)",
-        "credentials": {
-          "gmailOAuth2": {
-            "id": "PUT_GMAIL_OAUTH_CRED",
-            "name": "Gmail account"
-          }
+        "simple": false,
+        "filters": {
+          "q": "to:your-address+support@example.com",
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -896,
+        304
+      ],
+      "id": "6bb8cec1-4ae5-42d8-bb81-79d6a21321b1",
+      "name": "Gmail Trigger (support alias)",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8NUNIJjPDXxJAUhh",
+          "name": "Gmail account"
         }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Turn one Gmail Trigger item into the fields the rest of the workflow uses.\n// The Gmail node can hand us two different shapes:\n//   (a) structured: { from: {value:[{address,name}]}, to: {...}, subject: \"..\", text: \"..\" }\n//   (b) raw Gmail API: { payload: { headers: [{name,value}], parts: [..] } }\n// We accept both, so the workflow keeps working if the trigger output ever changes.\nconst m = $input.first().json;\nconst NL = String.fromCharCode(10);\nconst CR = String.fromCharCode(13);\n\nfunction rawHeader(name) {\n  const hs = (m.payload && m.payload.headers) ? m.payload.headers : [];\n  for (const h of hs) {\n    if (String(h.name).toLowerCase() === String(name).toLowerCase()) return String(h.value);\n  }\n  return \"\";\n}\n\nfunction addressOf(value) {\n  if (!value) return \"\";\n  if (typeof value === \"string\") {\n    const inside = value.match(/<([^>]+)>/);\n    return (inside ? inside[1] : value).trim();\n  }\n  if (typeof value === \"object\" && Array.isArray(value.value) && value.value.length > 0) {\n    const first = value.value[0];\n    if (first && first.address) return String(first.address).trim();\n  }\n  return \"\";\n}\n\nfunction decodeBase64(data) {\n  if (!data) return \"\";\n  const safe = String(data).replace(/-/g, \"+\").replace(/_/g, \"/\");\n  return Buffer.from(safe, \"base64\").toString(\"utf8\");\n}\n\nfunction findPlainText(payload) {\n  if (!payload) return \"\";\n  if (payload.mimeType === \"text/plain\" && payload.body && payload.body.data) {\n    return decodeBase64(payload.body.data);\n  }\n  const parts = payload.parts || [];\n  for (const p of parts) {\n    const found = findPlainText(p);\n    if (found) return found;\n  }\n  if (payload.body && payload.body.data) return decodeBase64(payload.body.data);\n  return \"\";\n}\n\nlet from = addressOf(m.from) || rawHeader(\"From\");\nlet to = addressOf(m.to) || rawHeader(\"Delivered-To\") || rawHeader(\"To\");\nconst subject = (typeof m.subject === \"string\" && m.subject) ? m.subject : rawHeader(\"Subject\");\n\nlet body = \"\";\nif (typeof m.text === \"string\" && m.text) body = m.text;\nif (!body) body = findPlainText(m.payload);\nif (!body && typeof m.snippet === \"string\") body = m.snippet;\n\nconst clean = body.split(CR).join(NL).split(NL)\n  .filter(function (line) { return line.trim().charAt(0) !== \">\"; })\n  .join(NL).trim();\n\n// Some mail clients send subject-only emails. If the body is empty, use the\n// subject as the question instead of replying with a useless greeting.\nlet question = clean;\nif (!question) question = String(subject || \"\");\n\nreturn [{ json: {\n  question: question.slice(0, 1500),\n  from: String(from),\n  subject: String(subject),\n  to: String(to),\n  threadId: m.threadId || \"\",\n  messageId: m.id || \"\",                      // Gmail API id - what markAsRead needs\n  rfcMessageId: m.messageId || \"\"             // RFC header id, for threading/debug\n} }];"
       },
-      {
-        "parameters": {
-          "mode": "runOnceForAllItems",
-          "jsCode": "// Turn one Gmail Trigger item into the fields the rest of the workflow uses.\n// The Gmail node can hand us two different shapes:\n//   (a) structured: { from: {value:[{address,name}]}, to: {...}, subject: \"..\", text: \"..\" }\n//   (b) raw Gmail API: { payload: { headers: [{name,value}], parts: [..] } }\n// We accept both, so the workflow keeps working if the trigger output ever changes.\nconst m = $input.first().json;\nconst NL = String.fromCharCode(10);\nconst CR = String.fromCharCode(13);\n\nfunction rawHeader(name) {\n  const hs = (m.payload && m.payload.headers) ? m.payload.headers : [];\n  for (const h of hs) {\n    if (String(h.name).toLowerCase() === String(name).toLowerCase()) return String(h.value);\n  }\n  return \"\";\n}\n\nfunction addressOf(value) {\n  if (!value) return \"\";\n  if (typeof value === \"string\") {\n    const inside = value.match(/<([^>]+)>/);\n    return (inside ? inside[1] : value).trim();\n  }\n  if (typeof value === \"object\" && Array.isArray(value.value) && value.value.length > 0) {\n    const first = value.value[0];\n    if (first && first.address) return String(first.address).trim();\n  }\n  return \"\";\n}\n\nfunction decodeBase64(data) {\n  if (!data) return \"\";\n  const safe = String(data).replace(/-/g, \"+\").replace(/_/g, \"/\");\n  return Buffer.from(safe, \"base64\").toString(\"utf8\");\n}\n\nfunction findPlainText(payload) {\n  if (!payload) return \"\";\n  if (payload.mimeType === \"text/plain\" && payload.body && payload.body.data) {\n    return decodeBase64(payload.body.data);\n  }\n  const parts = payload.parts || [];\n  for (const p of parts) {\n    const found = findPlainText(p);\n    if (found) return found;\n  }\n  if (payload.body && payload.body.data) return decodeBase64(payload.body.data);\n  return \"\";\n}\n\nlet from = addressOf(m.from) || rawHeader(\"From\");\nlet to = addressOf(m.to) || rawHeader(\"Delivered-To\") || rawHeader(\"To\");\nconst subject = (typeof m.subject === \"string\" && m.subject) ? m.subject : rawHeader(\"Subject\");\n\nlet body = \"\";\nif (typeof m.text === \"string\" && m.text) body = m.text;\nif (!body) body = findPlainText(m.payload);\nif (!body && typeof m.snippet === \"string\") body = m.snippet;\n\nconst clean = body.split(CR).join(NL).split(NL)\n  .filter(function (line) { return line.trim().charAt(0) !== \">\"; })\n  .join(NL).trim();\n\n// Some mail clients send subject-only emails. If the body is empty, use the\n// subject as the question instead of replying with a useless greeting.\nlet question = clean;\nif (!question) question = String(subject || \"\");\n\nreturn [{ json: {\n  question: question.slice(0, 1500),\n  from: String(from),\n  subject: String(subject),\n  to: String(to),\n  threadId: m.threadId || \"\",\n  messageId: m.id || \"\",                      // Gmail API id - what markAsRead needs\n  rfcMessageId: m.messageId || \"\"             // RFC header id, for threading/debug\n} }];"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -620,
-          300
-        ],
-        "id": "353c2a17-a66d-4d42-8ed6-12be21fac758",
-        "name": "Prep Email Question"
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": false,
-              "typeValidation": "loose",
-              "version": 2
-            },
-            "conditions": [
-              {
-                "id": "s1",
-                "leftValue": "={{ $json.to }}",
-                "rightValue": "+support",
-                "operator": {
-                  "type": "string",
-                  "operation": "contains"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          -380,
-          300
-        ],
-        "id": "e76c07fb-66cc-441e-8a9c-444ac98f4844",
-        "name": "Is a support mail?"
-      },
-      {
-        "parameters": {},
-        "type": "n8n-nodes-base.noOp",
-        "typeVersion": 1,
-        "position": [
-          -380,
-          60
-        ],
-        "id": "6f9c9fec-92cb-4772-a481-41fd2f990b45",
-        "name": "Ignore (not for this alias)"
-      },
-      {
-        "parameters": {
-          "promptType": "define",
-          "text": "={{ $json.question }}",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        560
+      ],
+      "id": "353c2a17-a66d-4d42-8ed6-12be21fac758",
+      "name": "Prep Email Question"
+    },
+    {
+      "parameters": {
+        "conditions": {
           "options": {
-            "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES - follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If the knowledge_base results do not contain the answer: reply EXACTLY this sentence and nothing else:\n   I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\n4. If the customer asks to talk to a human, a person, an agent or the support team: reply EXACTLY this sentence and nothing else:\n   Of course - I've passed your request to our team and a human will reply within 24 hours.\n   The customer asked for a person, so this handoff is the answer itself; never answer that you do not have the information.\n5. Rules 3 and 4 are the only two handoff wordings. Never promise anything else and never invent other wording.\n6. Keep answers under 60 words. Friendly, concrete, no fluff.\n7. End every real answer with the source file name in square brackets, e.g. [faq.md].\n8. Use the conversation history for follow-up questions.",
-            "maxIterations": 5
-          }
-        },
-        "type": "@n8n/n8n-nodes-langchain.agent",
-        "typeVersion": 3.1,
-        "position": [
-          -100,
-          300
-        ],
-        "id": "aa7f0094-734a-4a2f-b647-da1b0457ccc1",
-        "name": "Support Agent",
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 3000
-      },
-      {
-        "parameters": {
-          "mode": "retrieve-as-tool",
-          "topK": 4,
-          "options": {},
-          "toolName": "knowledge_base",
-          "toolDescription": "Search the Harbor Coffee Roasters knowledge base (FAQ, shipping, prices, policies). ALWAYS use this before answering any customer question.",
-          "tableName": {
-            "__rl": true,
-            "mode": "list",
-            "value": "documents",
-            "cachedResultName": "documents"
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
           },
-          "includeDocumentMetadata": true
-        },
-        "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
-        "typeVersion": 1.3,
-        "position": [
-          140,
-          560
-        ],
-        "id": "54136bf1-2b83-4ccc-a6c8-8e3de06f4a3b",
-        "name": "Supabase Vector Store (Tool)",
-        "credentials": {
-          "supabaseApi": {
-            "id": "jQOH7JyVce4o9i39",
-            "name": "Supabase account"
-          }
-        },
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 1500
-      },
-      {
-        "parameters": {
-          "model": "BAAI/bge-m3",
-          "options": {}
-        },
-        "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
-        "typeVersion": 1.2,
-        "position": [
-          360,
-          680
-        ],
-        "id": "d901c431-abf8-406d-9056-178f80b027c4",
-        "name": "Embeddings OpenAI (Query)",
-        "credentials": {
-          "openAiApi": {
-            "id": "ogZ8uYheTecXRIZI",
-            "name": "OpenAI account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "model": "deepseek-chat",
-          "options": {}
-        },
-        "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
-        "typeVersion": 1,
-        "position": [
-          340,
-          300
-        ],
-        "id": "cf789631-f764-4361-b66b-24988467c467",
-        "name": "DeepSeek Chat Model",
-        "credentials": {
-          "deepSeekApi": {
-            "id": "wo6MAuk0h5i7BtkI",
-            "name": "DeepSeek account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "sessionIdType": "customKey",
-          "sessionKey": "={{ $json.from }}",
-          "contextWindowLength": 6
-        },
-        "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-        "typeVersion": 1.4,
-        "position": [
-          300,
-          520
-        ],
-        "id": "cb50f2ff-6028-4179-b7c5-94c91f8586cb",
-        "name": "Simple Memory"
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": false,
-              "typeValidation": "loose",
-              "version": 2
-            },
-            "conditions": [
-              {
-                "id": "esc-1",
-                "leftValue": "={{ $json.output }}",
-                "rightValue": "passed your question to our team",
-                "operator": {
-                  "type": "string",
-                  "operation": "contains"
-                }
-              },
-              {
-                "id": "esc-2",
-                "leftValue": "={{ $json.output }}",
-                "rightValue": "passed your request to our team",
-                "operator": {
-                  "type": "string",
-                  "operation": "contains"
-                }
+          "conditions": [
+            {
+              "id": "s1",
+              "leftValue": "={{ $json.to }}",
+              "rightValue": "+support",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
               }
-            ],
-            "combinator": "or"
-          },
-          "options": {}
+            }
+          ],
+          "combinator": "and"
         },
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          580,
-          300
-        ],
-        "id": "cd73a061-4bc3-4fec-820d-b5f9e9a75553",
-        "name": "If escalated"
+        "options": {}
       },
-      {
-        "parameters": {
-          "mode": "runOnceForAllItems",
-          "jsCode": "const q = $('Prep Email Question').first().json;\nreturn [{ json: { question: q.question } }];"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          160,
-          520
-        ],
-        "id": "f9232330-fed5-454c-8a5f-c0c4d60f798a",
-        "name": "Prep Ticket Question"
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -960,
+        848
+      ],
+      "id": "e76c07fb-66cc-441e-8a9c-444ac98f4844",
+      "name": "Is a support mail?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        960
+      ],
+      "id": "6f9c9fec-92cb-4772-a481-41fd2f990b45",
+      "name": "Ignore (not for this alias)"
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('Prep Email Question').first().json.messageId }}",
+        "message": "={{ $json.output }}",
+        "options": {}
       },
-      {
-        "parameters": {
-          "resource": "row",
-          "operation": "create",
-          "tableId": "tickets",
-          "dataToSend": "autoMapInputData",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.supabase",
-        "typeVersion": 1,
-        "position": [
-          820,
-          520
-        ],
-        "id": "62cb191e-ba9c-4d5c-873f-f36528505cb9",
-        "name": "Insert Ticket",
-        "credentials": {
-          "supabaseApi": {
-            "id": "JQOH7JyVce4o9i39",
-            "name": "Supabase account"
-          }
-        },
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 2000
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        848
+      ],
+      "id": "c34fd917-0f0c-4973-839c-5da96107c7b1",
+      "name": "Send Gmail Reply",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "webhookId": "b67db30c-2dc7-411a-96a4-a7c4295c6a1e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8NUNIJjPDXxJAUhh",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "markAsRead",
+        "messageId": "={{ $('Prep Email Question').first().json.messageId }}"
       },
-      {
-        "parameters": {
-          "resource": "message",
-          "operation": "sendMessage",
-          "chatId": "YOUR_TELEGRAM_CHAT_ID",
-          "text": "=New support ticket #{{ $json.id || 'NOT SAVED - check the Supabase connection' }} - {{ $json.question }}\n\nWhy: {{ $('Support Agent').first().json.output.includes('passed your request to our team') ? 'the customer asked for a human' : 'the knowledge base had no answer' }}\nChannel: email\n\nOpen the Supabase 'tickets' table to follow up.",
-          "additionalFields": {}
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        896
+      ],
+      "id": "de4b394d-6ea9-4d49-9c70-ebaa4fdb6187",
+      "name": "Mark handled as read",
+      "webhookId": "d6903841-b0c3-46c2-962a-ecf3bd8eccf4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8NUNIJjPDXxJAUhh",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "SupportBotCore01",
+          "mode": "list",
+          "cachedResultName": "Support Bot — core (answers and handover)"
         },
-        "type": "n8n-nodes-base.telegram",
-        "typeVersion": 1.2,
-        "position": [
-          600,
-          520
-        ],
-        "id": "95e233df-0801-49f7-829a-11a44e258ea6",
-        "name": "Notify Telegram",
-        "onError": "continueRegularOutput",
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 2000,
-        "credentials": {
-          "telegramApi": {
-            "id": "HfMV2TNGkXsBsIQd",
-            "name": "Telegram account"
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "question": "={{ $json.question }}",
+            "channel": "email",
+            "sessionKey": "={{ $json.threadId }}"
           }
         }
       },
-      {
-        "parameters": {
-          "method": "POST",
-          "url": "PUT_YOUR_CRM_WEBHOOK_URL",
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({ event: 'support_ticket', question: $json.question, ticket_id: $json.id, created_at: $json.created_at, source: 'website_chat' }) }}",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          560,
-          700
-        ],
-        "id": "02633485-226f-4067-918a-6c32ccfd169f",
-        "name": "Push to CRM",
-        "onError": "continueRegularOutput",
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 2000
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForAllItems",
-          "jsCode": "const ans = ($('Support Agent').first().json.output || '');\nconst askedForHuman = ans.indexOf('passed your request to our team') !== -1;\nconst output = askedForHuman\n  ? \"Of course - I've passed your request to our team and a human will reply within 24 hours.\"\n  : \"I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\";\nreturn [{ json: { output } }];"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1040,
-          460
-        ],
-        "id": "459c28d0-3338-43c9-b6d1-f979ac88f13d",
-        "name": "Reply Escalated"
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForAllItems",
-          "jsCode": "const item = $input.first().json;\nreturn [{ json: { output: item.output || '' } }];"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1040,
-          140
-        ],
-        "id": "805e1b71-fcc7-4b74-ad73-cab1b2bf46b5",
-        "name": "Reply Normal"
-      },
-      {
-        "parameters": {
-          "resource": "message",
-          "operation": "reply",
-          "messageId": "={{ $('Prep Email Question').first().json.messageId }}",
-          "message": "={{ $json.output }}",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.gmail",
-        "typeVersion": 2.2,
-        "position": [
-          1300,
-          300
-        ],
-        "id": "c34fd917-0f0c-4973-839c-5da96107c7b1",
-        "name": "Send Gmail Reply",
-        "credentials": {
-          "gmailOAuth2": {
-            "id": "PUT_GMAIL_OAUTH_CRED",
-            "name": "Gmail account"
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        120
+      ],
+      "id": "91aaf372-724a-4b8d-999b-cc338efff53c",
+      "name": "Execute core"
+    }
+  ],
+  "connections": {
+    "Gmail Trigger (support alias)": {
+      "main": [
+        [
+          {
+            "node": "Prep Email Question",
+            "type": "main",
+            "index": 0
           }
-        },
-        "retryOnFail": true,
-        "maxTries": 2,
-        "waitBetweenTries": 3000
-      },
-      {
-        "parameters": {
-          "resource": "message",
-          "operation": "markAsRead",
-          "messageId": "={{ $('Prep Email Question').first().json.messageId }}",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.gmail",
-        "typeVersion": 2.2,
-        "position": [
-          1560,
-          300
-        ],
-        "id": "de4b394d-6ea9-4d49-9c70-ebaa4fdb6187",
-        "name": "Mark handled as read",
-        "credentials": {
-          "gmailOAuth2": {
-            "id": "PUT_GMAIL_OAUTH_CRED",
-            "name": "Gmail account"
+        ]
+      ]
+    },
+    "Prep Email Question": {
+      "main": [
+        [
+          {
+            "node": "Is a support mail?",
+            "type": "main",
+            "index": 0
           }
-        },
-        "onError": "continueRegularOutput"
-      }
-    ],
-    "connections": {
-      "Gmail Trigger (support alias)": {
-        "main": [
-          [
-            {
-              "node": "Prep Email Question",
-              "type": "main",
-              "index": 0
-            }
-          ]
         ]
-      },
-      "Prep Email Question": {
-        "main": [
-          [
-            {
-              "node": "Is a support mail?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Is a support mail?": {
-        "main": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Ignore (not for this alias)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Support Agent": {
-        "main": [
-          [
-            {
-              "node": "If escalated",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Supabase Vector Store (Tool)": {
-        "ai_tool": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "ai_tool",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Embeddings OpenAI (Query)": {
-        "ai_embedding": [
-          [
-            {
-              "node": "Supabase Vector Store (Tool)",
-              "type": "ai_embedding",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DeepSeek Chat Model": {
-        "ai_languageModel": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "ai_languageModel",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Simple Memory": {
-        "ai_memory": [
-          [
-            {
-              "node": "Support Agent",
-              "type": "ai_memory",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "If escalated": {
-        "main": [
-          [
-            {
-              "node": "Prep Ticket Question",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Reply Normal",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Prep Ticket Question": {
-        "main": [
-          [
-            {
-              "node": "Insert Ticket",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Insert Ticket": {
-        "main": [
-          [
-            {
-              "node": "Push to CRM",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Push to CRM": {
-        "main": [
-          [
-            {
-              "node": "Notify Telegram",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Notify Telegram": {
-        "main": [
-          [
-            {
-              "node": "Reply Escalated",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Reply Escalated": {
-        "main": [
-          [
-            {
-              "node": "Send Gmail Reply",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Reply Normal": {
-        "main": [
-          [
-            {
-              "node": "Send Gmail Reply",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Send Gmail Reply": {
-        "main": [
-          [
-            {
-              "node": "Mark handled as read",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      }
+      ]
     },
-    "settings": {
-      "executionOrder": "v1"
+    "Is a support mail?": {
+      "main": [
+        [
+          {
+            "node": "Execute core",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore (not for this alias)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "staticData": null,
-    "meta": {},
-    "nodeGroups": [],
-    "pinData": {}
+    "Send Gmail Reply": {
+      "main": [
+        [
+          {
+            "node": "Mark handled as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute core": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "07f67047-ba7b-4255-8b14-7e15599d9795",
+  "activeVersionId": "07f67047-ba7b-4255-8b14-7e15599d9795",
+  "versionCounter": 34,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-09-19T06:18:58.670Z",
+      "createdAt": "2026-09-19T06:18:58.670Z",
+      "role": "workflow:owner",
+      "workflowId": "SupportBotEmailGmail01",
+      "projectId": "jSEYIip5OsVM51lB",
+      "project": {
+        "updatedAt": "2026-09-14T07:47:59.561Z",
+        "createdAt": "2026-09-14T07:42:45.127Z",
+        "id": "jSEYIip5OsVM51lB",
+        "name": "Han wang <your-address@example.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "30280390-9d3a-4d95-90d9-114f020e916e"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version cdb40d98",
+    "description": ""
   }
-]
+}

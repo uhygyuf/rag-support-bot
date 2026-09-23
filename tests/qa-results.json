@@ -11,28 +11,28 @@
   "area": "workflow",
   "desc": "Agent has a chat model wired",
   "status": "PASS",
-  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'Valid input?']"
+  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'When Executed by Another Workflow']"
  },
  {
   "id": "T1.3",
   "area": "workflow",
   "desc": "Agent has memory wired (multi-turn)",
   "status": "PASS",
-  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'Valid input?']"
+  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'When Executed by Another Workflow']"
  },
  {
   "id": "T1.4",
   "area": "workflow",
   "desc": "Agent has the knowledge-base tool wired",
   "status": "PASS",
-  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'Valid input?']"
+  "detail": "children: ['Simple Memory', 'Supabase Vector Store (Tool)', 'DeepSeek Chat Model', 'When Executed by Another Workflow']"
  },
  {
   "id": "T1.5",
   "area": "workflow",
   "desc": "Escalation is deterministic (no reliance on the model choosing a tool)",
   "status": "PASS",
-  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Knowledge File', 'Prep Ticket Question', 'Push to CRM', 'Reply Empty Input', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'Valid input?', 'When chat message received']"
+  "detail": "nodes: ['DeepSeek Chat Model', 'Default Data Loader', 'Embeddings OpenAI', 'Embeddings OpenAI (Query)', 'Execute core', 'If escalated', 'Insert Ticket', 'Notify Telegram', 'On form submission', 'Prep Knowledge File', 'Prep Ticket Question', 'Push to CRM', 'Reply Empty Input', 'Reply Escalated', 'Reply Normal', 'Simple Memory', 'Supabase Vector Store', 'Supabase Vector Store (Tool)', 'Support Agent', 'Valid input?', 'When Executed by Another Workflow', 'When chat message received']"
  },
  {
   "id": "T1.6",
@@ -186,7 +186,7 @@
   "area": "workflow",
   "desc": "Ticket records the CUSTOMER's question (read from the trigger, not the model reply)",
   "status": "PASS",
-  "detail": "const t = $('When chat message received').first().json;\nconst item = $input.first().json;\nreturn [{ json: { question: t."
+  "detail": "const q = ($('When Executed by Another Workflow').first().json.question || '');\nreturn [{ json: { question: q } }];"
  },
  {
   "id": "T4.12",
@@ -600,23 +600,23 @@
  {
   "id": "T20.1",
   "area": "channels",
-  "desc": "SupportBotTelegram-channel.json: readable + has an AI Agent",
+  "desc": "SupportBotTelegram-channel.json: calls the shared answer path exactly once",
   "status": "PASS",
-  "detail": ""
+  "detail": "calls: ['Execute core']"
  },
  {
   "id": "T20.2",
   "area": "channels",
-  "desc": "SupportBotTelegram-channel.json: reuses the same knowledge base tool",
+  "desc": "SupportBotTelegram-channel.json: passes the customer question and its own channel label",
   "status": "PASS",
-  "detail": ""
+  "detail": "{\"mappingMode\": \"defineBelow\", \"value\": {\"question\": \"={{ $json.message.text }}\", \"channel\": \"Telegram\", \"sessionKey\": \"={{ $json.message.chat.id }}\"}}"
  },
  {
   "id": "T20.3",
   "area": "channels",
-  "desc": "SupportBotTelegram-channel.json: escalation still writes a ticket",
+  "desc": "SupportBotTelegram-channel.json: keeps no copy of the answer path (the drift this project already had once)",
   "status": "PASS",
-  "detail": ""
+  "detail": "copied: []"
  },
  {
   "id": "T20.4",
@@ -628,23 +628,23 @@
  {
   "id": "T21.1",
   "area": "channels",
-  "desc": "SupportBotEmail-channel.json: readable + has an AI Agent",
+  "desc": "SupportBotEmail-channel.json: calls the shared answer path exactly once",
   "status": "PASS",
-  "detail": ""
+  "detail": "calls: ['Execute core']"
  },
  {
   "id": "T21.2",
   "area": "channels",
-  "desc": "SupportBotEmail-channel.json: reuses the same knowledge base tool",
+  "desc": "SupportBotEmail-channel.json: passes the customer question and its own channel label",
   "status": "PASS",
-  "detail": ""
+  "detail": "{\"mappingMode\": \"defineBelow\", \"value\": {\"question\": \"={{ $json.question }}\", \"channel\": \"email\", \"sessionKey\": \"={{ $json.threadId || $json.from }}\"}}"
  },
  {
   "id": "T21.3",
   "area": "channels",
-  "desc": "SupportBotEmail-channel.json: escalation still writes a ticket",
+  "desc": "SupportBotEmail-channel.json: keeps no copy of the answer path (the drift this project already had once)",
   "status": "PASS",
-  "detail": ""
+  "detail": "copied: []"
  },
  {
   "id": "T21.4",
@@ -789,9 +789,16 @@
  {
   "id": "T26.5",
   "area": "channels",
-  "desc": "Same knowledge base + escalation as every other channel",
+  "desc": "Calls the same shared answer path as every other channel",
   "status": "PASS",
-  "detail": ""
+  "detail": "calls: ['Execute core']"
+ },
+ {
+  "id": "T26.8",
+  "area": "channels",
+  "desc": "The Gmail channel keeps no copy of the answer path",
+  "status": "PASS",
+  "detail": "copied: []"
  },
  {
   "id": "T26.6",
@@ -901,7 +908,7 @@
  {
   "id": "T23.1",
   "area": "quality",
-  "desc": "All 17 Code nodes in shipped workflows parse as valid JavaScript",
+  "desc": "All 8 Code nodes in shipped workflows parse as valid JavaScript",
   "status": "PASS",
   "detail": "[]"
  },
@@ -1008,7 +1015,7 @@
   "area": "channels",
   "desc": "Every stored ticket is announced with its number, and a lost ticket is shouted about",
   "status": "PASS",
-  "detail": "without a number: []"
+  "detail": "=New support ticket #{{ $json.id || 'NOT SAVED - check the Supabase connection' "
  },
  {
   "id": "T29.2",
@@ -1020,9 +1027,16 @@
  {
   "id": "T29.3",
   "area": "channels",
-  "desc": "The alert wording is identical across channels apart from the label",
+  "desc": "The alert names the channel it came from, taken from the caller instead of a hard-coded label",
   "status": "PASS",
-  "detail": "1 distinct wordings"
+  "detail": "=New support ticket #{{ $json.id || 'NOT SAVED - check the Supabase connection' }} - {{ $json.question }}\n\nWhy: {{ $('Su"
+ },
+ {
+  "id": "T29.4",
+  "area": "channels",
+  "desc": "The answer path lives in exactly one blueprint and every channel calls it",
+  "status": "PASS",
+  "detail": "owning it: ['SupportBotCore-subworkflow.json'] | not calling it: []"
  },
  {
   "id": "T14.1",
@@ -1055,8 +1069,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (151)",
+  "desc": "README states the real number of checks (153)",
   "status": "PASS",
-  "detail": "README says 151"
+  "detail": "README says 153"
  }
 ]
