@@ -118,8 +118,10 @@ def test_workflow(wf):
               "60 words" in sp)
         check("T3.4", "safety", "Prompt routes an unanswerable question to the fixed handoff sentence",
               "passed your question to our team" in sp and "EXACTLY this sentence" in sp)
-        check("T3.6", "safety", "Prompt also escalates an explicit human request",
-              "asks for a human" in sp)
+        check("T3.6", "safety", "Prompt has its own handoff sentence for an explicit human request",
+              "asks to talk to a human" in sp and "passed your request to our team" in sp)
+        check("T3.7", "safety", "A human request is never answered as if the bot lacked the answer",
+              "never answer that you do not have the information" in sp)
 
     # --- deterministic escalation branch: ticket insert + notification + reply
     ins = N.get("Insert Ticket")
@@ -156,6 +158,29 @@ def test_workflow(wf):
                                    "(read from the trigger, not the model reply)",
               "$('When chat message received')" in js and "chatInput" in js
               and "item.output" not in js,
+              js[:120])
+
+    # The gate is a string match on the agent's reply, so a wrong condition shape fails silently and
+    # sends EVERY answer down the ticket branch (it happened: a normal Canada shipping answer was
+    # turned into a handoff because the conditions block was replaced instead of extended).
+    gate = N.get("If escalated")
+    if gate:
+        block = gate["parameters"].get("conditions") or {}
+        conds = block.get("conditions") or []
+        phrases = [c.get("rightValue") for c in conds]
+        check("T4.12", "workflow", "Escalation gate accepts BOTH handoff wordings",
+              block.get("combinator") == "or"
+              and "passed your question to our team" in phrases
+              and "passed your request to our team" in phrases,
+              "combinator=%r phrases=%r" % (block.get("combinator"), phrases))
+        check("T4.13", "workflow", "Every escalation condition tests the node output field",
+              bool(conds) and all("$json.output" in (c.get("leftValue") or "") for c in conds),
+              [c.get("leftValue") for c in conds])
+    esc_node = N.get("Reply Escalated")
+    if esc_node:
+        js = esc_node["parameters"].get("jsCode") or ""
+        check("T4.14", "workflow", "The reply sentence says which handoff happened",
+              "passed your request to our team" in js and "passed your question to our team" in js,
               js[:120])
 
     # --- ingestion branch regression

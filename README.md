@@ -32,6 +32,7 @@ the page still loads and the widget says the assistant is offline; the storefron
 |---|---|
 | Answers from the company's documents, not from model memory | every answer ends with its source file, e.g. `… 7–14 business days. [faq.md]` |
 | Admits ignorance in one fixed sentence | `I don't have that information - I've passed your question to our team and a human will reply within 24 hours.` |
+| Confirms a human handoff instead of pretending not to know | when the customer asks for a person, the reply is `Of course - I've passed your request to our team and a human will reply within 24 hours.` (the two handoffs have separate wordings, and both are asserted) |
 | Never lets that sentence be an empty promise | the same turn writes a row into Supabase `tickets`, pushes it to a CRM webhook and sends the operator a Telegram alert (the CRM node ships disabled with a placeholder URL — point it at your own endpoint and enable it) |
 | Follows a conversation | same-session follow-ups ("…what about Canada?") resolve against the earlier turn |
 | Same behaviour on every channel | the widget, Gmail and Telegram all run the same agent, knowledge base and escalation branch |
@@ -99,11 +100,11 @@ and what the design deliberately does not have: `docs/architecture.md`.
 
 | Suite | What it covers | Last run |
 |---|---|---|
-| `tests/qa_suite.py` | **139 static + contract checks** (workflow shape 29, channels 23, reliability 18, ux 10, a11y 10, integration 10, safety 10, release 10, content 8, docs 5, security 4, quality 2) — no network, no writes | 139 / 139 PASS |
+| `tests/qa_suite.py` | **143 static + contract checks** (workflow shape 32, channels 23, reliability 18, safety 11, ux 10, a11y 10, integration 10, release 10, content 8, docs 5, security 4, quality 2) — no network, no writes | 143 / 143 PASS |
 | `tests/widget_dom_test.js` | 12 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n), its offline behaviour, its retry after a stale address, and its refusal to render an answer as HTML, in a stubbed DOM | 12 / 12 PASS |
 | `tests/test_ingest.py` | 13 offline cases for the loader: chunk boundaries, an oversized block, CRLF, a whitespace-only file, and the rule that the two APIs never share headers | 13 / 13 PASS |
 | `tests/kb_live_check.py` | reads the live knowledge base and compares it with `knowledge/`: every chunk names a file, every file is loaded, no stray source, chunk counts match the plan (needs credentials; skipped without them) | 5 / 5 PASS |
-| `tests/e2e_live.py` | **11 live cases** against a running instance: `happy_path_answer`, `citation_is_a_real_source`, `policy_document_reachable`, `memory_followup`, `escalation_reply`, `injection_refused`, `malformed_body_survives`, `empty_input_survives`, `long_input_survives`, `concurrent_3_visitors`, `public_tunnel_reachable` | 11 / 11 PASS |
+| `tests/e2e_live.py` | **12 live cases** against a running instance: `happy_path_answer`, `citation_is_a_real_source`, `policy_document_reachable`, `memory_followup`, `escalation_reply`, `human_request_handoff`, `injection_refused`, `malformed_body_survives`, `empty_input_survives`, `long_input_survives`, `concurrent_3_visitors`, `public_tunnel_reachable` | 12 / 12 PASS |
 | crash recovery | both processes are Windows services (`n8n support bot` under a WinSW wrapper, `ngrok` with recovery options); Windows starts them at boot and restarts them on failure | services come back, `bot-status.bat` reports them running, the public address answers again (evidence in `docs/operations.md` §5) |
 
 Results are machine-readable: `tests/qa-results.json`, `tests/e2e-results.json`.

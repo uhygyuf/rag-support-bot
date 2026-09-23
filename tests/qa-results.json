@@ -121,7 +121,14 @@
  {
   "id": "T3.6",
   "area": "safety",
-  "desc": "Prompt also escalates an explicit human request",
+  "desc": "Prompt has its own handoff sentence for an explicit human request",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
+  "id": "T3.7",
+  "area": "safety",
+  "desc": "A human request is never answered as if the bot lacked the answer",
   "status": "PASS",
   "detail": ""
  },
@@ -180,6 +187,30 @@
   "desc": "Ticket records the CUSTOMER's question (read from the trigger, not the model reply)",
   "status": "PASS",
   "detail": "const t = $('When chat message received').first().json;\nconst item = $input.first().json;\nreturn [{ json: { question: t."
+ },
+ {
+  "id": "T4.12",
+  "area": "workflow",
+  "desc": "Escalation gate accepts BOTH handoff wordings",
+  "status": "PASS",
+  "detail": "combinator='or' phrases=['passed your question to our team', 'passed your request to our team']"
+ },
+ {
+  "id": "T4.13",
+  "area": "workflow",
+  "desc": "Every escalation condition tests the node output field",
+  "status": "PASS",
+  "detail": [
+   "={{ $json.output }}",
+   "={{ $json.output }}"
+  ]
+ },
+ {
+  "id": "T4.14",
+  "area": "workflow",
+  "desc": "The reply sentence says which handoff happened",
+  "status": "PASS",
+  "detail": "const ans = ($('Support Agent').first().json.output || '');\nconst askedForHuman = ans.indexOf('passed your request to ou"
  },
  {
   "id": "T5.O",
@@ -968,8 +999,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (139)",
+  "desc": "README states the real number of checks (143)",
   "status": "PASS",
-  "detail": "README says 139"
+  "detail": "README says 143"
  }
 ]

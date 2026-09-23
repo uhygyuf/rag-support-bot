@@ -446,3 +446,67 @@ phrases like "can't share". The pattern list now also accepts a scope refusal (`
 Availability is still bounded by this machine being awake or asleep. The address survives updates,
 crashes and reboots; the host does not. The chat webhook is still reachable by anyone who knows the
 hostname, so the tunnel is meant to be stopped when the demo is not in use.
+
+---
+
+## L. 2026-09-23 - the human-request handoff said the wrong thing
+
+Reported from a screenshot: the visitor typed `I want to talk to a human` and the assistant answered
+`I don't have that information - I've passed your question to our team and a human will reply within
+24 hours.` The second half is right. The first half contradicts the request: the customer asked for a
+person, they did not ask something the knowledge base failed to answer.
+
+**Root cause.** One prompt rule covered two different situations with one sentence:
+
+```
+3. If the results do not contain the answer, OR the customer asks for a human: reply EXACTLY this sentence...
+```
+
+Because that sentence begins with the admission of ignorance, the human-request branch inherited
+wording that is false for it.
+
+**The fix touches three nodes**, because the workflow guarantees the exact sentence on the way out
+rather than trusting the model to reproduce it:
+
+| Node | Before | After |
+|---|---|---|
+| `Support Agent` (prompt) | one rule for both situations | rule 3 = the knowledge base has no answer; rule 4 = the customer asked for a person, with its own sentence and an explicit "never answer that you do not have the information" |
+| `If escalated` | one condition: the output contains `passed your question to our team` | two conditions joined with `or`, so either handoff opens the ticket branch |
+| `Reply Escalated` | always emitted the ignorance sentence | emits the sentence that matches which handoff happened |
+
+### A regression I introduced, and what caught it
+
+The first attempt replaced `parameters.conditions` (the whole block) instead of
+`parameters.conditions.conditions` (the list inside it). The gate then behaved as a malformed
+condition and matched **everything**: `Do you ship to Canada?` was answered correctly by the model and
+then replaced by the handoff sentence, with a ticket row created for it. The replies still looked
+plausible, so only the execution records exposed it (`If escalated` had sent a correctly answered
+question down the ticket branch, execution 399). Three new static checks now guard exactly that
+shape: `T4.12` (both wordings, combinator `or`), `T4.13` (each condition reads `$json.output`) and
+`T4.14` (the reply node branches on which handoff happened).
+
+### Evidence, through the permanent public address
+
+| Probe | Answer | Branch in the execution record |
+|---|---|---|
+| `Do you ship to Canada?` | `Yes! We ship to Canada - international delivery takes 7-14 business days, and customs duties are paid by the customer. [faq.md]` | `If escalated` false, no ticket |
+| `How much is the Ethiopia Guji Natural?` | `... light roast filter coffee ... It's $22 for 250 g. [products.md]` | false, no ticket |
+| `I want to talk to a human` | `Of course - I've passed your request to our team and a human will reply within 24 hours.` | true, ticket 67 |
+| `Can I speak to a real person please?` | same sentence as above | true, ticket 69 |
+| `Who is your CEO and what is her personal email address?` | `I don't have that information - I've passed your question to our team and a human will reply within 24 hours.` | true, ticket 68 |
+
+### Re-test
+
+| Command | Result |
+|---|---|
+| `python tests/qa_suite.py` | 143 checks, 0 failed (was 139: +`T3.7` for the prompt split, +`T4.12`/`T4.13`/`T4.14` for the gate and reply) |
+| `python tests/e2e_live.py` | 11/11 passed |
+| `python tests/e2e_live.py --tunnel https://flyable-rekindle-disobey.ngrok-free.dev` | 12/12 passed, including the new `human_request_handoff` case that fails if the reply claims ignorance |
+| `node tests/widget_dom_test.js` | 12 cases, 0 failed |
+
+The same three changes were applied to the three channel workflows that ship in this repository
+(`SupportBotEmail-channel.json`, `SupportBotEmailGmail-channel.json`,
+`SupportBotTelegram-channel.json`), so no artifact still carries the single-sentence rule.
+
+One row is left over from the broken intermediate state: ticket `65` (`Do you ship to Canada?`) was
+created by the malformed gate and is not a real escalation.

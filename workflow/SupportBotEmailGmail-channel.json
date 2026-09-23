@@ -98,7 +98,7 @@
           "promptType": "define",
           "text": "={{ $json.question }}",
           "options": {
-            "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES - follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If the results do not contain the answer, OR the customer asks for a human: reply EXACTLY this sentence and nothing else:\n   I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\n   Never promise anything else and never invent other wording.\n4. Keep answers under 60 words. Friendly, concrete, no fluff.\n5. End every real answer with the source file name in square brackets, e.g. [faq.md].\n6. Use the conversation history for follow-up questions.",
+            "systemMessage": "You are the customer-support assistant for Harbor Coffee Roasters (a demo online store).\n\nRULES - follow exactly:\n1. ALWAYS call the tool \"knowledge_base\" before answering. Never answer from your own knowledge.\n2. Answer ONLY with facts found in the knowledge_base results. Never invent prices, dates or policies.\n3. If the knowledge_base results do not contain the answer: reply EXACTLY this sentence and nothing else:\n   I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\n4. If the customer asks to talk to a human, a person, an agent or the support team: reply EXACTLY this sentence and nothing else:\n   Of course - I've passed your request to our team and a human will reply within 24 hours.\n   The customer asked for a person, so this handoff is the answer itself; never answer that you do not have the information.\n5. Rules 3 and 4 are the only two handoff wordings. Never promise anything else and never invent other wording.\n6. Keep answers under 60 words. Friendly, concrete, no fluff.\n7. End every real answer with the source file name in square brackets, e.g. [faq.md].\n8. Use the conversation history for follow-up questions.",
             "maxIterations": 5
           }
         },
@@ -219,9 +219,18 @@
                   "type": "string",
                   "operation": "contains"
                 }
+              },
+              {
+                "id": "esc-2",
+                "leftValue": "={{ $json.output }}",
+                "rightValue": "passed your request to our team",
+                "operator": {
+                  "type": "string",
+                  "operation": "contains"
+                }
               }
             ],
-            "combinator": "and"
+            "combinator": "or"
           },
           "options": {}
         },
@@ -326,7 +335,7 @@
       {
         "parameters": {
           "mode": "runOnceForAllItems",
-          "jsCode": "return [{ json: { output: \"I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\" } }];"
+          "jsCode": "const ans = ($('Support Agent').first().json.output || '');\nconst askedForHuman = ans.indexOf('passed your request to our team') !== -1;\nconst output = askedForHuman\n  ? \"Of course - I've passed your request to our team and a human will reply within 24 hours.\"\n  : \"I don't have that information - I've passed your question to our team and a human will reply within 24 hours.\";\nreturn [{ json: { output } }];"
         },
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
