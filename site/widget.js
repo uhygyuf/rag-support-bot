@@ -41,15 +41,19 @@
 
   /* Resolve the backend address. data-webhook wins, then backend.json (the hosted copy),
      then data-local-webhook for a page opened from disk. If none of them answers, the
-     visitor still gets the offline line and never an HTTP code. */
-  var ready = (function () {
+     visitor still gets the offline line and never an HTTP code.
+     The lookup is re-runnable on purpose: the hosted copy follows a tunnel whose hostname
+     changes when it restarts, so a visitor who keeps the tab open must be able to pick up
+     the new address without reloading. */
+  function resolveBackend() {
     if (EXPLICIT) { return Promise.resolve(EXPLICIT); }
     if (location.protocol === 'file:') { return Promise.resolve(LOCAL); }
     return fetch('backend.json', { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { return (j && j.webhook) ? j.webhook : LOCAL; })
       .catch(function () { return LOCAL; });
-  })();
+  }
+  var ready = resolveBackend();
 
   /* styles */
   var css = document.createElement('style');
@@ -161,18 +165,11 @@
   });
 
   /* send */
-  function send(text) {
-    var q = String(text == null ? input.value : text).trim();
-    if (!q) { return; }
-    input.value = '';
-    add(q, 'me');
-    quick.textContent = '';                 /* the starting options are used once */
-    var pending = add('…', 'bot');
-
+  function attempt(q, pending, isRetry) {
     var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS) : null;
 
-    ready.then(function (url) {
+    return (isRetry ? resolveBackend() : ready).then(function (url) {
       return fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,8 +187,25 @@
     }).catch(function (err) {
       if (timer) { clearTimeout(timer); }
       if (window.console && console.warn) { console.warn('[support widget]', err); }
+      if (!isRetry) {
+        /* The address may have moved while this tab was open (the tunnel gets a new hostname
+           when it restarts). Look it up once more and try again before giving up: a page left
+           open through a restart would otherwise stay offline until the visitor reloaded. */
+        ready = resolveBackend();
+        return attempt(q, pending, true);
+      }
       pending.textContent = OFFLINE;       /* visitors never see a stack trace */
     });
+  }
+
+  function send(text) {
+    var q = String(text == null ? input.value : text).trim();
+    if (!q) { return; }
+    input.value = '';
+    add(q, 'me');
+    quick.textContent = '';                 /* the starting options are used once */
+    var pending = add('…', 'bot');
+    attempt(q, pending, false);
   }
 
   panel.querySelector('form').addEventListener('submit', function (e) {

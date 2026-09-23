@@ -50,10 +50,22 @@ function Get-TunnelUrl {
     return ''
 }
 
-function Test-Tunnel([string]$url) {
-    if (-not $url) { return $false }
+function Get-TunnelCode([string]$url) {
+    if (-not $url) { return '000' }
     $code = & curl.exe -s -o NUL -m 25 -w '%{http_code}' ($url.TrimEnd('/') + '/healthz')
-    return ("$code" -eq '200')
+    if (-not $code) { return '000' }
+    return ([string]$code).Trim()
+}
+
+# A tunnel is reachable when the Cloudflare edge answers at all. A 502/530 means the tunnel is
+# fine and the service behind it is booting or down - that is a different problem from a tunnel
+# that has gone away (000), and replacing the tunnel would not fix it.
+function Test-Tunnel([string]$url) {
+    return ((Get-TunnelCode $url) -notin @('000', ''))
+}
+
+function Test-TunnelHealthy([string]$url) {
+    return ((Get-TunnelCode $url) -eq '200')
 }
 
 function Get-PublishedBackend {
@@ -161,11 +173,11 @@ function Wait-Tunnel([string]$url, [int]$seconds = 150, [string]$logPath) {
     for ($i = 1; $i -le [int]($seconds / 5); $i++) {
         Start-Sleep -Seconds 5
         Write-Host '.' -NoNewline
-        if (Test-Tunnel $url) { Write-Host ''; return $true }
+        if (Test-TunnelHealthy $url) { Write-Host ''; return $true }
         # a slow tunnel can publish its address late; keep following the log
         if ($logPath) {
             $fresh = Get-TunnelUrlFromLog $logPath 'https://[a-z0-9-]+\.trycloudflare\.com'
-            if ($fresh -and $fresh -ne $url) { Set-Content -LiteralPath $urlFile -Value $fresh -Encoding ASCII -NoNewline; return $null }
+            if ($fresh -and $fresh -ne $url) { Set-Content -LiteralPath $urlFile -Value $fresh -Encoding ASCII -NoNewline; return $false }
         }
     }
     Write-Host ''
@@ -218,7 +230,10 @@ function Show-Status {
     $published = Get-PublishedBackend
     if (-not $published) { Say '      published page         backend.json not found on disk' Yellow }
     elseif ($url -and $published -like "*$($url.TrimEnd('/'))*") { Say '      published page         points at the live tunnel' Green }
-    else { Say ("      published page         points at {0}" -f $published) Yellow }
+    else {
+        Say ("      published page         STALE - it points at {0}" -f $published) Red
+        Say '                             run bot-on.bat: it republishes the current address' Yellow
+    }
 
     Say ''
     Say '      the published page itself is hosted by GitHub and always opens;' DarkGray
@@ -261,19 +276,27 @@ switch ($Action) {
         Head '[3/4]  public tunnel (the published page needs a reachable one)'
         $url = Get-TunnelUrl
         $tunnelOk = $false
-        if ($url -and (Test-Tunnel $url)) {
+        if ($url -and (Test-TunnelHealthy $url)) {
             Say ("      online: {0}" -f $url) Green
             $tunnelOk = $true
         } else {
             if ($url) {
-                Say ("      {0} does not answer - giving it 30 more seconds" -f $url) Yellow
+                Say ("      {0} answers with {1} - giving it 30 seconds" -f $url, (Get-TunnelCode $url)) Yellow
+                Write-Host '      waiting for the service through the tunnel' -NoNewline -ForegroundColor DarkGray
                 $tunnelOk = [bool](Wait-Tunnel $url 30 $null)
             }
-            if (-not $tunnelOk) {
+            if (-not $tunnelOk -and $url -and (Test-Tunnel $url)) {
+                # the edge answers, so the tunnel exists; a 502/530 here is the service booting
+                # behind it, and replacing the tunnel would only add a new hostname to chase
+                Say '      the tunnel itself is up - the service behind it is the slow part' Yellow
+                Write-Host '      waiting for the service' -NoNewline -ForegroundColor DarkGray
+                $tunnelOk = [bool](Wait-Tunnel $url 150 $null)
+            }
+            if (-not $tunnelOk -and -not (Test-Tunnel $url)) {
                 if (-not $tunnelCfg) {
                     Say '      no tunnel settings in watchdog-config.json - cannot restart it here' Red
                 } else {
-                    Say '      replacing the tunnel (a quick tunnel that stops answering has to be recreated)' Yellow
+                    Say '      replacing the tunnel (the edge does not answer for this address at all)' Yellow
                     $url = Start-FreshTunnel $tunnelLog $tunnelCfg
                     if (-not $url) {
                         Say '      no new address appeared in the tunnel log within 90 seconds' Red

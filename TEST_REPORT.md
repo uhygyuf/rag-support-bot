@@ -337,3 +337,51 @@ The switches were exercised on this machine only, with this installation's task 
 machine where the scheduled tasks are named differently (or absent) reports
 "task not found … (not part of this install)" and continues, but that branch was not run. The
 `bot-status.bat` window was driven through `cmd /c`, not by an actual double-click.
+
+---
+
+## J. Fourth pass (2026-09-23, 08:30-09:00): "the switch looks useless"
+
+Reported: the published page showed `Sorry, our assistant is offline right now.` while the switches
+were supposed to have been tested the night before.
+
+### What was actually true
+
+The machine had been asleep overnight. The watchdog log shows what happened when it woke:
+
+```
+2026-09-23 08:34:04  repaired: tunnel <a new hostname>, service restarted
+2026-09-23 08:35:58  repaired: tunnel <a second hostname>, service restarted
+2026-09-23 08:35:59  alert sent (alert sent) message_id 85
+2026-09-23 08:36:01  hook exited 1 for <the second hostname> - will retry next scan
+```
+
+Measured at 08:35:32: `http://127.0.0.1:5678/healthz` -> `000` (the service was still booting; it
+answered `200` about 30 s later). `public-url.txt` held a tunnel that answered `200`; the hosted
+`backend.json` still held the previous night's address, which answered `000`. So the page was
+offline for a real reason, and it was not the switches: they had never been run that morning.
+Three defects behind it were fixed.
+
+| ID | Severity | Defect | Fix | Evidence |
+|---|---|---|---|---|
+| BUG-14 | P2 | The publish step ran while the service was still booting behind the tunnel, so it failed for a reason unrelated to the address, and the next chance was a whole scan interval away (up to 5 minutes with the page pointing at a dead address) | Wait for the service through the tunnel before publishing, then retry the publish up to 3 times inside the same scan | New watchdog tests T24: 3 runs in one scan, state recorded, `hook succeeded on attempt 3` in the log |
+| BUG-15 | P2 | A replacement tunnel was recorded, handed to the service and published without anyone checking that the edge answers for it. Observed as a hostname that returns 530 and a publish step that failed against it every 5 minutes | Stop the old client and wait for it to exit (a second client started next to a live one announces an address and dies), then require the edge to answer a replacement address before it is recorded; otherwise leave the service alone and say so | New watchdog tests T23: `public-url.txt` unchanged, no service restart, `the edge does not answer for it` in the log |
+| BUG-16 | P3 | A widget in a tab that was already open never looked the address up again, so a visitor who had the page open while the tunnel restarted stayed offline until they reloaded | Re-resolve `backend.json` and retry once on a failed send; only then show the offline line | Widget DOM case 12 passes: the failure, the second lookup and the successful retry are all asserted |
+
+### Re-test after the fixes
+
+| Command | Result |
+|---|---|
+| `python tests/qa_suite.py` | 138 checks, 0 failed |
+| `node tests/widget_dom_test.js` | 12 cases, 0 failed |
+| `powershell -File tests/run-tests.ps1` (watchdog) | see the watchdog `CHANGELOG.md` for the count; the three new assertions and the reworked T5 pass |
+| `python tests/e2e_live.py --tunnel <public url>` | 11/11 passed (re-run after the tunnel moved to a new hostname) |
+| `demo/publish-backend-url.ps1` then a question through the published address | `200`, answer cited `[faq.md]` |
+
+### Still true afterwards
+
+The publish step refuses to publish an address that does not answer, so a red status usually means
+the tunnel is genuinely down, not that the switch failed. The switch is still a manual action: the
+unattended path is the watchdog, which now closes the same gap within about a minute instead of a
+scan interval. Nothing here changes the standing limitation that the assistant answers only while
+this machine is awake.

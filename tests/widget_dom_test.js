@@ -193,6 +193,37 @@ async function main() {
       'log.innerHTML=' + JSON.stringify(String(log.innerHTML).slice(0, 40)));
   }
 
+  /* 6. a tab that was open when the tunnel address changed must recover by itself */
+  {
+    const DEAD = 'https://old-host.trycloudflare.com/webhook/x/chat';
+    const LIVE = 'https://new-host.trycloudflare.com/webhook/x/chat';
+    const dom = makeDom({ attrs: { 'data-local-webhook': LOCAL } });
+    dom.location = { protocol: 'https:', href: 'https://uhygyuf.github.io/rag-support-bot/' };
+    let lookups = 0;
+    const calls = [];
+    const sandbox = runWidget(dom, (url) => {
+      calls.push(url);
+      if (url === 'backend.json') {
+        lookups++;
+        const webhook = lookups === 1 ? DEAD : LIVE;
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ webhook: webhook }) });
+      }
+      if (url === DEAD) return Promise.reject(new Error('Failed to fetch'));
+      return Promise.resolve({
+        ok: true, text: () => Promise.resolve('{"output":"answered after the address changed [faq.md]"}')
+      });
+    });
+    await tick();
+    ask(dom);
+    await tick();
+    await tick();
+    const shown = lastBotMessage(dom);
+    record('a tab opened before a restart recovers without a reload',
+      shown.indexOf('answered after the address changed') !== -1, shown);
+    record('the widget looked the backend address up again',
+      lookups >= 2 && calls.indexOf(LIVE) !== -1, 'lookups=' + lookups + ' ' + JSON.stringify(calls));
+  }
+
   const failed = results.filter((r) => r.status === 'FAIL');
   fs.writeFileSync(path.join(ROOT, 'tests', 'widget_dom-results.json'),
     JSON.stringify(results, null, 2) + '\n');
