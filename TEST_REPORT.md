@@ -594,3 +594,78 @@ administrator anyway, so the rule removes a prompt rather than crossing a trust 
 |---|---|
 | `python tests/qa_suite.py` | 148 checks, 0 failed (was 143: `T28.9` grant once, `T28.10` awaited elevation with readable output, `T28.11` cancelled prompt reported, `T28.12` scoped and reversible, `T28.13` the reported mode comes from the rule, not the token) |
 | `python tests/e2e_live.py --tunnel https://flyable-rekindle-disobey.ngrok-free.dev` | 12/12 passed |
+
+---
+
+## N. 2026-09-23 - the Telegram channel was still answering with the old rule
+
+A screenshot of the Telegram thread showed four alerts, all reading *"the bot could not answer a
+customer"* for questions the bot had in fact answered - two of them *"I want to talk to a human"*.
+Three separate defects came out of it.
+
+### Defect 1: the live Telegram workflow was never updated
+
+| Node | Live Telegram channel, before | After |
+|---|---|---|
+| `Support Agent` | rule 3 merged both cases: "If the results do not contain the answer, OR the customer asks for a human: reply EXACTLY this sentence ... I don't have that information" | split into rule 3 (no answer) and rule 4 (wants a human), with an explicit instruction never to answer that it does not know |
+| `If escalated` | `and`, one condition (`passed your question to our team`) | `or`, both handoff wordings |
+| `Reply Escalated` | hard-coded "I don't have that information ..." | branches on the wording the agent actually used |
+
+Why it was missed: the wording fix was applied to the main workflow and to the four blueprint files,
+and the live Telegram workflow kept its old three nodes. The same sentence lived in four channel
+files, so it drifted. n8n's own answer to that is a sub-workflow shared by the channel triggers
+(*Break workflows into smaller parts*); that refactor is a noted follow-up, and until then `T29.3`
+fails if the channel wordings drift apart again.
+
+The live workflow was updated node by node from the blueprint (only `parameters` replaced, so ids,
+positions and credentials stayed) and re-published: **importing a workflow deactivates it**, which
+would otherwise have left the Telegram bot silent.
+
+### Defect 2: the alert said the wrong thing and hid the reason
+
+```
+before  New support ticket - the bot could not answer a customer.
+        Question: I want to talk to a human
+        Open the Supabase 'tickets' table to follow up.
+
+after   New support ticket #82 - I want to talk to a human
+
+        Why: the customer asked for a human
+        Channel: demo page
+
+        Open the Supabase 'tickets' table to follow up.
+```
+
+`Why` is computed from the same handoff sentence the agent used, so it cannot contradict the reply;
+`Channel` names where the customer came from, which the old text never did. The ticket number comes
+from the inserted row, which execution 461 shows is available to the alert.
+
+### Defect 3, found while verifying: a lost ticket was silent
+
+`Insert Ticket` runs with `onError: continueRegularOutput`, so a failed insert does not fail the
+execution: the customer is still told a human will follow up and the operator still gets an alert,
+but no row is stored. That happened once during this work - execution 465 shows `Insert Ticket`
+taking 10520 ms (two attempts of `retryOnFail` with a 2 s pause) and returning `{}`, with no row in
+`tickets` and no error recorded; the next probe, execution 468, took 699 ms and stored row 82. The
+failure did not reproduce, so the transient cause stays unresolved - but it is no longer invisible:
+the alert now reads `#NOT SAVED - check the Supabase connection` when the insert produced nothing,
+instead of quietly showing no number.
+
+### Evidence
+
+| Step | Result |
+|---|---|
+| blueprint against live, node by node, before the fix | only the three nodes differed, plus the chat id, which is a placeholder in the repository by design |
+| node parameters after each import | `full: ['Notify Telegram']`, `Telegram: ['Support Agent', 'If escalated', 'Notify Telegram', 'Reply Escalated']`, `email: ['Notify Telegram']` |
+| workflow states after publishing | all four active; Telegram `getWebhookInfo`: the permanent hostname, `pending_update_count` 0, no last error |
+| an escalation through the permanent address | `200`, and the Telegram message that arrived reads `New support ticket #82 - I want to talk to a human` / `Why: the customer asked for a human` / `Channel: demo page` |
+| `tickets` after the failed attempt | 69, 67, 63 - the row really was missing |
+| `tickets` after the successful probe | 82 present, `question = I want to talk to a human` |
+| credentials used by the node | the same project and the same service-role key as the direct API test, compared from `export:credentials --decrypted` without printing the values |
+
+### Re-test
+
+| Command | Result |
+|---|---|
+| `python tests/qa_suite.py` | 151 checks, 0 failed (`T29.1` the alert names the ticket and shouts when it was not stored, `T29.2` no artifact still says "could not answer", `T29.3` no drift between channels) |
+| a normal question through the permanent address | `200`, `Harbor House ... $18.50 for 340 g ... [products.md]` |

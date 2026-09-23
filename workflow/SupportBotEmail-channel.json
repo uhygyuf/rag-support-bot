@@ -268,7 +268,7 @@
           "resource": "message",
           "operation": "sendMessage",
           "chatId": "YOUR_TELEGRAM_CHAT_ID",
-          "text": "=New support ticket - the bot could not answer a customer.\n\nQuestion: {{ $json.question }}\n\nOpen the Supabase 'tickets' table to follow up.",
+          "text": "=New support ticket #{{ $json.id || 'NOT SAVED - check the Supabase connection' }} - {{ $json.question }}\n\nWhy: {{ $('Support Agent').first().json.output.includes('passed your request to our team') ? 'the customer asked for a human' : 'the knowledge base had no answer' }}\nChannel: email\n\nOpen the Supabase 'tickets' table to follow up.",
           "additionalFields": {}
         },
         "type": "n8n-nodes-base.telegram",

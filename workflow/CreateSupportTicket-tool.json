@@ -57,7 +57,7 @@
      "resource": "message",
      "operation": "sendMessage",
      "chatId": "PUT_YOUR_CHAT_ID_HERE",
-     "text": "=New support ticket - a customer question the bot could not answer.\n\nQuestion: {{ $json.question }}\n\nOpen the Supabase 'tickets' table to follow up.",
+     "text": "=New support ticket - a question needs a follow-up.\n\nQuestion: {{ $json.question }}\n\nOpen the Supabase 'tickets' table to follow up.",
      "additionalFields": {}
     },
     "type": "n8n-nodes-base.telegram",

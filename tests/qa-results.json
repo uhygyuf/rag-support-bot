@@ -1004,6 +1004,27 @@
   "detail": ""
  },
  {
+  "id": "T29.1",
+  "area": "channels",
+  "desc": "Every stored ticket is announced with its number, and a lost ticket is shouted about",
+  "status": "PASS",
+  "detail": "without a number: []"
+ },
+ {
+  "id": "T29.2",
+  "area": "channels",
+  "desc": "No artifact still tells the operator the bot could not answer",
+  "status": "PASS",
+  "detail": "still saying it: []"
+ },
+ {
+  "id": "T29.3",
+  "area": "channels",
+  "desc": "The alert wording is identical across channels apart from the label",
+  "status": "PASS",
+  "detail": "1 distinct wordings"
+ },
+ {
   "id": "T14.1",
   "area": "security",
   "desc": "No secrets committed in the project tree",
@@ -1034,8 +1055,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (148)",
+  "desc": "README states the real number of checks (151)",
   "status": "PASS",
-  "detail": "README says 148"
+  "detail": "README says 151"
  }
 ]

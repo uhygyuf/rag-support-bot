@@ -739,6 +739,36 @@ def test_switches():
           "Test-RulePresent $n8nService" in ps and "Test-RulePresent $tunnelService" in ps
           and bool(_rule_body) and "Test-Admin" not in _rule_body)
 
+    # --- notifications: the alert that goes with every stored ticket.
+    # The same sentence lived in four channel files, and the live Telegram channel kept the old
+    # wording for days after the others were fixed. These three checks make the alert one thing:
+    # it names the ticket, it never repeats the false "could not answer", and the wording cannot
+    # drift between channels again.
+    wf_dir = os.path.join(ROOT, "workflow")
+    channels = {"SupportBotRAG-full.json": "demo page",
+                "SupportBotTelegram-channel.json": "Telegram",
+                "SupportBotEmail-channel.json": "email",
+                "SupportBotEmailGmail-channel.json": "email"}
+    alerts = {}
+    for fn in channels:
+        node = nodes_by_name(load_workflow(os.path.join(wf_dir, fn))).get("Notify Telegram")
+        alerts[fn] = (node or {}).get("parameters", {}).get("text", "")
+
+    check("T29.1", "channels", "Every stored ticket is announced with its number, and a lost ticket is shouted about",
+          all("$json.id" in t and "NOT SAVED" in t for t in alerts.values()),
+          "without a number: %s" % [f for f, t in alerts.items() if "$json.id" not in t])
+
+    stale = [fn for fn in list(channels) + ["CreateSupportTicket-tool.json"]
+             if "could not answer" in read(os.path.join(wf_dir, fn))]
+    check("T29.2", "channels", "No artifact still tells the operator the bot could not answer",
+          not stale, "still saying it: %s" % stale)
+
+    shaped = {fn: re.sub(r"Channel: .*", "Channel: <x>", t) for fn, t in alerts.items()}
+    check("T29.3", "channels", "The alert wording is identical across channels apart from the label",
+          len(set(shaped.values())) == 1
+          and all("passed your request to our team" in t for t in alerts.values()),
+          "%d distinct wordings" % len(set(shaped.values())))
+
 
 def main():
     ap = argparse.ArgumentParser()
