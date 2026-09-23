@@ -34,7 +34,8 @@ PowerShell service cmdlets need:
 
 After that one prompt, `bot-on.bat`, `bot-off.bat` and `bot-status.bat` work with **no prompt at
 all**, for ever, including after a reboot. `bot-status.bat` prints which of the two modes you are in
-(`needs no permission prompt` / `will ask Windows once, then never again`).
+(`needs no permission prompt` / `asks Windows once, then never again (-Action grant)`), and it decides
+that from the service rule itself rather than from the token it happens to be running under.
 
 Two honest notes:
 

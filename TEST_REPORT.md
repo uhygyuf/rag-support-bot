@@ -580,10 +580,11 @@ administrator anyway, so the rule removes a prompt rather than crossing a trust 
 | `bot-on.bat` **without** elevation (the real double-click path) | both services `Running`, n8n answering, tunnel online, `published page points at the live tunnel`, `the bot now answers` |
 | a question through the permanent address afterwards | `200`, the answer cited `[faq.md]` |
 | `bot-status.bat` | read-only report, still needs no rights |
+| `Test-RulePresent` called directly on `n8n` (rule present) / `Spooler` (no rule) inside a session that had just loaded the script | `True` / `False`, and the function body contains no `Test-Admin` - the old short-circuit made a **failed** grant report `the switch  needs no permission prompt`, which is exactly what the first failed attempt printed |
 
 ### Re-test
 
 | Command | Result |
 |---|---|
-| `python tests/qa_suite.py` | 147 checks, 0 failed (was 143: `T28.9` grant once, `T28.10` awaited elevation with readable output, `T28.11` cancelled prompt reported, `T28.12` scoped and reversible) |
+| `python tests/qa_suite.py` | 148 checks, 0 failed (was 143: `T28.9` grant once, `T28.10` awaited elevation with readable output, `T28.11` cancelled prompt reported, `T28.12` scoped and reversible, `T28.13` the reported mode comes from the rule, not the token) |
 | `python tests/e2e_live.py --tunnel https://flyable-rekindle-disobey.ngrok-free.dev` | 12/12 passed |

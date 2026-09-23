@@ -997,6 +997,13 @@
   "detail": ""
  },
  {
+  "id": "T28.13",
+  "area": "reliability",
+  "desc": "The reported permission mode comes from the service rule, not from the token in use",
+  "status": "PASS",
+  "detail": ""
+ },
+ {
   "id": "T14.1",
   "area": "security",
   "desc": "No secrets committed in the project tree",
@@ -1027,8 +1034,8 @@
  {
   "id": "T15.4",
   "area": "docs",
-  "desc": "README states the real number of checks (147)",
+  "desc": "README states the real number of checks (148)",
   "status": "PASS",
-  "detail": "README says 147"
+  "detail": "README says 148"
  }
 ]

@@ -730,6 +730,14 @@ def test_switches():
           "was cancelled" in ps and "1223" in ps)
     check("T28.12", "safety", "The granted rights are scoped and reversible",
           "service-sddl-backup" in ps and "WriteOwner" not in ps and "SeTakeOwnership" not in ps)
+    # A failed grant once reported "needs no permission prompt", because the check short-circuited on the
+    # administrator token the elevated window happens to hold. The reported mode must come from the
+    # service rule itself.
+    _at = ps.find("function Test-RulePresent")
+    _rule_body = ps[_at:ps.find("function Test-CanControl", _at)] if _at >= 0 else ""
+    check("T28.13", "reliability", "The reported permission mode comes from the service rule, not from the token in use",
+          "Test-RulePresent $n8nService" in ps and "Test-RulePresent $tunnelService" in ps
+          and bool(_rule_body) and "Test-Admin" not in _rule_body)
 
 
 def main():

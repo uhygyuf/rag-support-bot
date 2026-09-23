@@ -121,9 +121,10 @@ function Get-ServiceSddl([string]$name) {
     return ''
 }
 
-function Test-CanControl([string]$name) {
-    # Answers "will this switch need a prompt?" by looking at the same rule Windows will look at.
-    if (Test-Admin) { return $true }
+function Test-RulePresent([string]$name) {
+    # Is the rule actually written on the service? This is the same thing Windows will look at, and it
+    # deliberately does not consider the current token: an elevated run holds the rights anyway, so
+    # asking "am I an administrator?" here once made a failed grant report "needs no permission prompt".
     $sddl = Get-ServiceSddl $name
     if (-not $sddl) { return $false }
     foreach ($ace in [regex]::Matches($sddl, '\(A;;([A-Z]+);;;([^)]+)\)')) {
@@ -132,6 +133,12 @@ function Test-CanControl([string]$name) {
         if ($r -match 'RP' -and $r -match 'WP') { return $true }
     }
     return $false
+}
+
+function Test-CanControl([string]$name) {
+    # Will this switch need a prompt? Right now, with this token: an administrator never does.
+    if (Test-Admin) { return $true }
+    return (Test-RulePresent $name)
 }
 
 function Read-SddlBackup {
@@ -263,9 +270,9 @@ function Show-Status {
         if ($svc) { Say ("      service {0,-6} {1,-9} startup: {2}" -f $n, $svc.Status, $svc.StartType) }
         else { Say ("      service {0,-6} NOT INSTALLED" -f $n) Yellow }
     }
-    $free = (Test-CanControl $n8nService) -and (Test-CanControl $tunnelService)
+    $free = (Test-RulePresent $n8nService) -and (Test-RulePresent $tunnelService)
     if ($free) { Say '      the switch           needs no permission prompt' Green }
-    else { Say '      the switch           will ask Windows once, then never again' Yellow }
+    else { Say '      the switch           asks Windows once, then never again (-Action grant)' Yellow }
 
     if (Test-Service) { Say '      n8n service          answering on http://127.0.0.1:5678' Green }
     else { Say '      n8n service          not answering' Yellow }

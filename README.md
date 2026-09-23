@@ -100,7 +100,7 @@ and what the design deliberately does not have: `docs/architecture.md`.
 
 | Suite | What it covers | Last run |
 |---|---|---|
-| `tests/qa_suite.py` | **147 static + contract checks** (workflow shape 32, channels 23, reliability 20, safety 12, release 11, ux 10, a11y 10, integration 10, content 8, docs 5, security 4, quality 2) — no network, no writes | 147 / 147 PASS |
+| `tests/qa_suite.py` | **148 static + contract checks** (workflow shape 32, channels 23, reliability 21, safety 12, release 11, ux 10, a11y 10, integration 10, content 8, docs 5, security 4, quality 2) — no network, no writes | 148 / 148 PASS |
 | `tests/widget_dom_test.js` | 12 DOM-level cases for the widget's backend resolution (`data-webhook` → `backend.json` → local n8n), its offline behaviour, its retry after a stale address, and its refusal to render an answer as HTML, in a stubbed DOM | 12 / 12 PASS |
 | `tests/test_ingest.py` | 13 offline cases for the loader: chunk boundaries, an oversized block, CRLF, a whitespace-only file, and the rule that the two APIs never share headers | 13 / 13 PASS |
 | `tests/kb_live_check.py` | reads the live knowledge base and compares it with `knowledge/`: every chunk names a file, every file is loaded, no stray source, chunk counts match the plan (needs credentials; skipped without them) | 5 / 5 PASS |
